@@ -1,0 +1,1 @@
+export const backendUrl: string = 'https://cdh33jiu8f.execute-api.ap-southeast-2.amazonaws.com/prod';

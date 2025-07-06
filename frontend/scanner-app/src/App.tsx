@@ -3,6 +3,7 @@ import { useState } from 'react'
 // import viteLogo from '/vite.svg'
 import './App.css'
 import QRScanner from './components/QRScanner'
+import { backendUrl } from '../../../shared/links';
 
 type Student = {
   id: String,
@@ -21,7 +22,7 @@ function App() {
 
     try {
       const { studentId } = JSON.parse(text);      
-      const url = `https://ztfxnz8331.execute-api.ap-southeast-2.amazonaws.com/prod/student/${studentId}`
+      const url = `${backendUrl}/student/${studentId}`
 
       alert(`Fetch: ${url}`);
       const res = await fetch(url);
@@ -51,7 +52,7 @@ function App() {
   return (
     <div style={{ padding: '2rem' }}>
       <h1>QR Attendance Scanner</h1>
-      <p>Version 06072025-2258</p>
+      <p>Version 07072025-0330</p>
 
       {!qrText && <QRScanner onScan={handleScan}/>}
 

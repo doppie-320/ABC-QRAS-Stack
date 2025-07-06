@@ -10,7 +10,7 @@ const STUDENT_TABLE = process.env.STUDENT_TABLE;
 export const handler: APIGatewayProxyHandler = async (event) => {
     const { studentNumber, password } = JSON.parse(event.body || '{}');
 
-    if (!studentNumber || !password) {        
+    if (!studentNumber || !password) {
         return responseWithCors(400, JSON.stringify({ error: "Missing number or password." }));
     }
 
@@ -25,12 +25,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const student: any = result.Items?.[0];
     if (!student) {
-        return responseWithCors(404, JSON.stringify({ error: "Student not found." }));        
+        return responseWithCors(404, JSON.stringify({ error: "Student not found." }));
     }
 
     const match = await bcrypt.compare(password, student.passwordHash.S);
     if (!match) {
-        return responseWithCors(401, JSON.stringify({ error: "Invalid password." }));        
+        return responseWithCors(401, JSON.stringify({ error: "Invalid password." }));
     }
 
     const qrPayload = JSON.stringify({ studentId: student.id.S });
@@ -39,7 +39,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return responseWithCors(
         200,
         JSON.stringify({
-            id: student.id.s,
+            id: student.id.S,
+            name: student.name.S,
             qrCode
         })
     );

@@ -4,7 +4,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
-import { defaultCorsMethodResponses, withCorsIntegration } from './apigw-util';
+import { addCorsOptions, defaultCorsMethodResponses, withCorsIntegration } from './apigw-util';
 
 import * as path from 'path';
 
@@ -53,10 +53,15 @@ export class InfrastructureStack extends cdk.Stack {
     studentTable.grantReadData(fnGetStudentInfo);
 
     const api = new apigateway.RestApi(this, 'QrApi');
-    api.root.addResource('register')
-      .addMethod('POST', new apigateway.LambdaIntegration(fnRegister));
-    api.root.addResource('get-qr')
-      .addMethod('POST', new apigateway.LambdaIntegration(fnGetQr));
+
+    const regResource = api.root.addResource('register');
+    regResource.addMethod('POST', withCorsIntegration(fnRegister), { methodResponses: defaultCorsMethodResponses });
+    addCorsOptions(regResource);
+
+    const qrResource = api.root.addResource('get-qr');
+    qrResource.addMethod('POST', withCorsIntegration(fnGetQr), { methodResponses: defaultCorsMethodResponses });
+    addCorsOptions(qrResource);
+
     api.root.addResource('student')
       .addResource('{id}')
       .addMethod('GET', withCorsIntegration(fnGetStudentInfo), { methodResponses: defaultCorsMethodResponses });
