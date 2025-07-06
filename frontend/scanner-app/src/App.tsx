@@ -1,35 +1,81 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+// import reactLogo from './assets/react.svg'
+// import viteLogo from '/vite.svg'
 import './App.css'
+import QRScanner from './components/QRScanner'
+
+type Student = {
+  id: String,
+  studentNumber: string,
+  name: string
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [qrText, setQrText] = useState<string | null>(null);
+  const [student, setStudent] = useState<Student | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+
+  const handleScan = async (text: string) => {
+    setQrText(text);
+
+    try {
+      const { studentId } = JSON.parse(text);      
+      const url = `https://ztfxnz8331.execute-api.ap-southeast-2.amazonaws.com/prod/student/${studentId}`
+
+      alert(`Fetch: ${url}`);
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Request failed');
+      
+      setStudent(data);      
+    } catch(e :any) {
+      setError('Invalid QR or failed to fetch student info!');
+      console.error(e);
+    }
+  };
+
+  const handleApprove = async() => {
+    if(!student) return;
+    //POST log
+    setStatus('Attendance logged successfully!');
+  };
+
+  const handleReset = () => {
+    setQrText(null);
+    setStudent(null);
+    setError(null);
+    setStatus(null);
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div style={{ padding: '2rem' }}>
+      <h1>QR Attendance Scanner</h1>
+      <p>Version 06072025-2258</p>
+
+      {!qrText && <QRScanner onScan={handleScan}/>}
+
+      {error && (
+        <>
+          <p style={{color: 'red'}}>{error}</p>
+          <button onClick={handleReset}>Reset</button>
+        </>        
+      )}
+
+      {student && (
+        <div>
+          <h2>Student Info:</h2>
+          <p><strong>Name:</strong> {student.name}</p>
+          <p><strong>Student Number:</strong> {student.studentNumber}</p>
+
+          <button onClick={handleApprove} style={{ marginRight: '1rem' }}>✅ Approve</button>          
+          <button onClick={handleReset} style={{ marginRight: '1rem' }}>❌ Deny</button>                    
+
+          {status && <p>{status}</p>}
+        </div>
+      )}
+    </div>
   )
 }
 
-export default App
+export default App;
