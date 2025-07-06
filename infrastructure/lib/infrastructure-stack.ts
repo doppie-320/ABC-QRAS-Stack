@@ -1,0 +1,64 @@
+import * as cdk from 'aws-cdk-lib';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { Construct } from 'constructs';
+import { defaultCorsMethodResponses, withCorsIntegration } from './apigw-util';
+
+import * as path from 'path';
+
+
+export class InfrastructureStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    //DYNAMO DB    
+    const studentTable = new dynamodb.Table(this, `Students`, {
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING }
+    });
+    //GSIs
+    studentTable.addGlobalSecondaryIndex({
+      indexName: 'studentNumber-index',
+      partitionKey: { name: 'studentNumber', type: dynamodb.AttributeType.STRING }
+    });
+
+    const fnRegister = new NodejsFunction(this, 'RegisterFn', {
+      entry: path.join(__dirname, '../lambda/handler-register.ts'),
+      runtime: Runtime.NODEJS_20_X,
+      environment: {
+        STUDENT_TABLE: studentTable.tableName,
+      },
+    });
+
+    const fnGetQr = new NodejsFunction(this, 'GetQrFn', {
+      entry: path.join(__dirname, '../lambda/handler-getqr.ts'),
+      runtime: Runtime.NODEJS_20_X,
+      timeout: cdk.Duration.seconds(10),
+      environment: {
+        STUDENT_TABLE: studentTable.tableName,
+      },
+    });
+
+    const fnGetStudentInfo = new NodejsFunction(this, 'GetStudentInfoFn', {
+      entry: path.join(__dirname, '../lambda/handler-getStudentInfo.ts'),
+      runtime: Runtime.NODEJS_20_X,
+      environment: {
+        STUDENT_TABLE: studentTable.tableName,
+      },
+    });
+
+    studentTable.grantReadWriteData(fnRegister);
+    studentTable.grantReadWriteData(fnGetQr);
+    studentTable.grantReadData(fnGetStudentInfo);
+
+    const api = new apigateway.RestApi(this, 'QrApi');
+    api.root.addResource('register')
+      .addMethod('POST', new apigateway.LambdaIntegration(fnRegister));
+    api.root.addResource('get-qr')
+      .addMethod('POST', new apigateway.LambdaIntegration(fnGetQr));
+    api.root.addResource('student')
+      .addResource('{id}')
+      .addMethod('GET', withCorsIntegration(fnGetStudentInfo), { methodResponses: defaultCorsMethodResponses });
+  }
+}
