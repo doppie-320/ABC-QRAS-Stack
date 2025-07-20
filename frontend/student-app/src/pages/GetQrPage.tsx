@@ -51,7 +51,7 @@ export function LoginPage() {
             setIsLoading(false);
         } catch (error) {
             setErrorMessage(`${error}`);
-            console.error(`Error during registration:`, error);
+            console.error(`Error during login:`, error);
             setIsLoading(false);
         }
     }

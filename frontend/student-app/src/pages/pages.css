@@ -18,3 +18,23 @@
     font-weight: bolder;
     width: 100%;    
 }
+
+.remove-button {
+    background-color: darkred;
+    color: white;
+}
+
+.result-div {
+    background-color: yellow;
+    color: black;
+    padding: 25px;
+    border-radius: 25px;
+}
+
+.result-good {
+    background-color: greenyellow;
+}
+
+.result-bad {
+    background-color: red;
+}
