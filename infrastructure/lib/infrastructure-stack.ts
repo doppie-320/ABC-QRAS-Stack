@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
@@ -29,13 +30,28 @@ export class InfrastructureStack extends cdk.Stack {
       bucketName: mainBucketName,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
-      publicReadAccess: false
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: true,         // still block ACLs (recommended)
+        ignorePublicAcls: true,        // still ignore ACLs (recommended)
+        blockPublicPolicy: false,      // 👈 this must be false
+        restrictPublicBuckets: false   // 👈 this must also be false
+      }),
     });    
+    mainBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        sid: 'AllowPublicReadForPicsFolder',
+        actions: ['s3:GetObject'],
+        resources: [`${mainBucket.bucketArn}/pics/*`],
+        principals: [new iam.AnyPrincipal()],
+        effect: iam.Effect.ALLOW,
+      })
+    )
 
     //FUNCTIONS
     const fnRegister = new NodejsFunction(this, 'RegisterFn', {
       entry: path.join(__dirname, '../lambda/handler-register.ts'),
       runtime: Runtime.NODEJS_20_X,
+      timeout: cdk.Duration.seconds(60),
       environment: {
         STUDENT_TABLE: studentTable.tableName,
       },

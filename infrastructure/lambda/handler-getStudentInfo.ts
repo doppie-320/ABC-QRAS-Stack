@@ -19,7 +19,7 @@ export const handler: APIGatewayProxyHandler = async(event) => {
     if(!result.Item) { return responseWithCors(404, 'Student not found!'); }
 
     const student = unmarshall(result.Item);
-    delete student.passwordHash;    
-
+    delete student.passwordHash;   
+    
     return responseWithCors(200, JSON.stringify(student));
 };

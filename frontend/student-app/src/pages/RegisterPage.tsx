@@ -1,20 +1,29 @@
 import { useNavigate } from 'react-router-dom';
 import './pages.css'
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { backendUrl } from '../../../../shared/links';
+
+import Croppie from 'croppie';
+import 'croppie/croppie.css';
 
 export function RegisterPage() {
     const navigate = useNavigate();
 
-    const [regName, setRegName] = useState('');
-    const [regSN, setRegSN] = useState('');
-    const [reg1Password, setReg1Password] = useState('');
+    const [regName, setRegName] = useState('Qiongjiu');
+    const [regSN, setRegSN] = useState('elmo-qj');
+    const [reg1Password, setReg1Password] = useState('qj');    
+    const [croppedBase64, setCroppedBase64] = useState<string | null>(null);
+
+    const croppieRef = useRef<HTMLDivElement>(null);
+    const croppieInstance = useRef<any>(null);
+    const [isCropping, setIsCropping] = useState(false);
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
+
 
     const [isLoading, setIsLoading] = useState(false);
     const [hasAttempted, setHasAttempted] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [successStatus, setSuccessStatus] = useState<boolean>(false);    
+    const [successStatus, setSuccessStatus] = useState<boolean>(false);
 
     // const registerRequest = async (): Promise<void> => {
     //     try {
@@ -40,7 +49,7 @@ export function RegisterPage() {
     //             throw new Error(`Failed to register: ${errData.error}`);
     //         }
     //         const data = await response.json();
-            
+
     //         setRequestResponseCode(response.status);
     //         setRequestResponseText(data.message);
     //     } catch(error) {
@@ -151,10 +160,10 @@ export function RegisterPage() {
         });
     };
 
-    const registerRequest = async(): Promise<void> => {
+    const registerRequest = async (): Promise<void> => {
         setIsLoading(true);
-        try {            
-            if(!selectedImage) {
+        try {
+            if (!croppedBase64) {
                 setSuccessStatus(false);
                 setIsLoading(false);
                 setErrorMessage("You did not set a proper image");
@@ -171,11 +180,11 @@ export function RegisterPage() {
                     studentNumber: regSN,
                     name: regName,
                     password: reg1Password,
-                    pictureB64: await fileToBase64(selectedImage),
+                    pictureB64: croppedBase64,
                 }),
             });
 
-            if(response.ok) {
+            if (response.ok) {
                 setSuccessStatus(response.status == 200);
             } else {
                 const errData = await response.json();
@@ -184,42 +193,110 @@ export function RegisterPage() {
 
             setIsLoading(false);
             setHasAttempted(true);
-        } catch(err) {
+        } catch (err) {
             setErrorMessage(`${err}`);
-            setSuccessStatus(false);            
+            setSuccessStatus(false);
             setIsLoading(false);
             console.error(`Error during registration:`, errorMessage);
             setHasAttempted(true);
-        }        
+        }
     };
 
     const ProfilePictureEntry = () => {
-        return (
-            <>
-                {selectedImage ?
-                    //Display image and remove button
-                    (<>
-                        <img
-                            width={"250px"}
-                            src={URL.createObjectURL(selectedImage)}
-                        />
+
+        useEffect(() => {
+            if(selectedImage && isCropping && croppieRef.current) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if(croppieInstance.current) {
+                        croppieInstance.current.destroy();
+                    }
+
+                    croppieInstance.current = new Croppie(croppieRef.current!, {
+                        viewport: { width: 200, height: 200, type: 'square' },
+                        boundary: { width: 300, height: 300 },
+                        showZoomer: true,
+                    });
+
+                    croppieInstance.current.bind({
+                        url: reader.result as string,
+                    });
+                };
+                reader.readAsDataURL(selectedImage);
+            }
+        }, [selectedImage, isCropping]);
+
+        const handleCrop = async () => {
+            if (!croppieInstance.current) return;
+
+            const result = await croppieInstance.current.result({
+                type: 'base64',
+                size: 'viewport',
+                format: 'jpeg',
+                quality: 1
+            });
+            setCroppedBase64(result as string);
+            setIsCropping(false);
+        }
+
+        const handleRemove = () => {
+            setSelectedImage(null);
+            setCroppedBase64(null);
+            setIsCropping(false);
+        }
+
+        if(!selectedImage) {
+            return (
+                <input
+                    type='file'
+                    name='profilePicture'
+                    accept='image/*'
+                    onChange={(e) => {
+                        if (!e.target.files) return;
+                        setSelectedImage(e.target.files[0]);
+                        setIsCropping(true);                        
+                    }} />
+            );
+        }
+
+        if(isCropping) {
+            return (                
+                <div>
+                    <h1>Cropping Mode</h1>
+                    <div ref={croppieRef} />
+
+                    <div style={{
+                        display: 'flex',
+                        gap: '10px',
+                        marginTop: '10px',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        float: 'none',
+                    }}>
                         <button
-                        className="remove-button"
-                        onClick={() => {setSelectedImage(null)}}>
-                            Remove</button>
-                    </>) :
-                    //Add an add image button
-                    (
-                        <input
-                        type='file'
-                        name='profilePicture'
-                        onChange={(e) => {
-                            if(!e.target.files) return;
-                            setSelectedImage(e.target.files[0]);
-                        }}/>
-                    )}
-            </>
-        );
+                            onClick={handleCrop}
+                            style={{ backgroundColor: 'green', color: 'white', padding: '6px 12px', border: 'none', borderRadius: '4px' }}
+                        >
+                            Crop
+                        </button>
+                        <button onClick={handleRemove}>Remove</button>
+                    </div>
+                </div>
+            );
+        }
+
+        if (croppedBase64) {
+            return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <img src={croppedBase64 ?? ''} width={250} />
+                    <button className="remove-button" onClick={handleRemove}>
+                        Remove
+                    </button>
+                </div>
+            );
+        }
+
+        return null;
     };
 
     const AttemptDoneSupPage = () => {
@@ -227,11 +304,11 @@ export function RegisterPage() {
             <div
                 className={`result-div ${successStatus ? 'result-good' : 'result-bad'}`}>
                 <h1>{successStatus ?
-                'Registration success!' :
-                'There was an issue processing your registration!'}</h1>
+                    'Registration success!' :
+                    'There was an issue processing your registration!'}</h1>
                 <p>{successStatus ?
-                'Go back to the "Get Your QR" page to view your QR code.':
-                `ERROR: ${errorMessage}`}</p>                
+                    'Go back to the "Get Your QR" page to view your QR code.' :
+                    `ERROR: ${errorMessage}`}</p>
             </div>
         );
     };
@@ -274,7 +351,7 @@ export function RegisterPage() {
                         required
                     />
 
-                    <ProfilePictureEntry/>
+                    <ProfilePictureEntry />
 
                     <button
                         type="submit"
@@ -296,7 +373,7 @@ export function RegisterPage() {
                 (<>
                     {hasAttempted ?
                         //Has attempted to register
-                        <AttemptDoneSupPage/> :
+                        <AttemptDoneSupPage /> :
                         //Has not pressed register yet
                         <>
                             <h2>Register New Student</h2>
@@ -336,12 +413,14 @@ export function RegisterPage() {
 
                                 <ProfilePictureEntry />
 
-                                <button
-                                    type="submit"
-                                    style={{ backgroundColor: '#C9A0DC', marginTop: '1rem' }}
-                                >
-                                    Register
-                                </button>
+                                {croppedBase64 && 
+                                    <button
+                                        type="submit"
+                                        style={{ backgroundColor: '#C9A0DC', marginTop: '1rem' }}
+                                    >
+                                        Register
+                                    </button>
+                                }
                             </form>
                         </>
                     }
@@ -362,5 +441,5 @@ export function RegisterPage() {
         </>
     );
 
-    
+
 }

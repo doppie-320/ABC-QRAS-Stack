@@ -8,7 +8,8 @@ import { backendUrl } from '../../../shared/links';
 type Student = {
   id: String,
   studentNumber: string,
-  name: string
+  name: string,
+  pictureUrl?: string,
 }
 
 function App() {
@@ -21,23 +22,24 @@ function App() {
     setQrText(text);
 
     try {
-      const { studentId } = JSON.parse(text);      
+      const { studentId } = JSON.parse(text);
       const url = `${backendUrl}/student/${studentId}`
 
       alert(`Fetch: ${url}`);
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Request failed');
-      
-      setStudent(data);      
-    } catch(e :any) {
+
+      setStudent(data);
+      console.log(data);
+    } catch (e: any) {
       setError('Invalid QR or failed to fetch student info!');
       console.error(e);
     }
   };
 
-  const handleApprove = async() => {
-    if(!student) return;
+  const handleApprove = async () => {
+    if (!student) return;
     //POST log
     setStatus('Attendance logged successfully!');
   };
@@ -54,23 +56,30 @@ function App() {
       <h1>QR Attendance Scanner</h1>
       <p>Version 07072025-0330</p>
 
-      {!qrText && <QRScanner onScan={handleScan}/>}
+      {!qrText && <QRScanner onScan={handleScan} />}
 
       {error && (
         <>
-          <p style={{color: 'red'}}>{error}</p>
+          <p style={{ color: 'red' }}>{error}</p>
           <button onClick={handleReset}>Reset</button>
-        </>        
+        </>
       )}
 
       {student && (
         <div>
           <h2>Student Info:</h2>
+          {student.pictureUrl && (
+            <img
+              src={student.pictureUrl}
+              alt="Profile"
+              style={{ width: '150px', height: '150px', borderRadius: '5px', objectFit: 'cover', marginBottom: '1rem' }}
+            />
+          )}
           <p><strong>Name:</strong> {student.name}</p>
           <p><strong>Student Number:</strong> {student.studentNumber}</p>
 
-          <button onClick={handleApprove} style={{ marginRight: '1rem' }}>✅ Approve</button>          
-          <button onClick={handleReset} style={{ marginRight: '1rem' }}>❌ Deny</button>                    
+          <button onClick={handleApprove} style={{ marginRight: '1rem' }}>✅ Approve</button>
+          <button onClick={handleReset} style={{ marginRight: '1rem' }}>❌ Deny</button>
 
           {status && <p>{status}</p>}
         </div>
