@@ -4,16 +4,21 @@ import viteLogo from '/vite.svg'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
 
+import EventsPage from './pages/Events'
+import AttendancePage from './pages/Attendance'
+
 function App() {
 	return (
 		<Router>
 			<nav style={{ padding: "1rem", background: "#eee" }}>
 				<Link to="/">Dashboard</Link> | {" "}
 				<Link to="/events">Events</Link> | {" "}
+				<Link to="/attendance">Attendance</Link> | {" "}
 			</nav>
 			<Routes>
 				<Route path="/" element={<></>}/>
-				<Route path="/events" element={<></>}/>
+				<Route path="/events" element={<EventsPage/>}/>
+				<Route path="/attendance" element={<AttendancePage/>}/>
 			</Routes>
 		</Router>
 	)

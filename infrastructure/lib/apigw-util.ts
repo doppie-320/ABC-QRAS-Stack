@@ -42,7 +42,7 @@ export const defaultCorsMethodResponses: apigw.MethodResponse[] = [
     },
 ]
 
-export function addCorsOptions(resource: apigw.Resource, allowedMethods: string[] = ['OPTIONS', 'POST']) {
+export function addCorsOptions(resource: apigw.Resource, allowedMethods: string[] = ['OPTIONS', 'POST', 'DELETE']) {
   resource.addMethod('OPTIONS', new apigw.MockIntegration({
     integrationResponses: [
       {
