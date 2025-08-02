@@ -43,8 +43,8 @@ export default function AttendancePage() {
             .then(data => {
                 const combined = [
                     ...(data.present || []).map((s: Student) => ({ ...s, status: "Present" })),
-                    ...(data.rejected || []).map((s: Student) => ({ ...s, status: "Rejected" })),
-                    ...(data.absent || []).map((s: Student) => ({ ...s, status: "Absent" }))
+                    ...(data.rejected || []).map((s: Student) => ({ ...s, status: "Absent (Rejected)" })),
+                    ...(data.absent || []).map((s: Student) => ({ ...s, status: "Absent (Not yet scanned)" }))
                 ];
                 setStudentsWithStatus(combined);
                 setLoading(false);
@@ -62,9 +62,9 @@ export default function AttendancePage() {
         switch (status) {
             case "Present":
                 return { backgroundColor: "#27ae60", color: "#fff" };
-            case "Rejected":
+            case "Absent (Rejected)":
                 return { backgroundColor: "#e67e22", color: "#fff" };
-            case "Absent":
+            case "Absent (Not yet scanned)":
                 return { backgroundColor: "#c0392b", color: "#fff" };
             default:
                 return { backgroundColor: "#fff", color: "#000" };

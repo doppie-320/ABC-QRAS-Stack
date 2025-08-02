@@ -151,6 +151,30 @@ export class InfrastructureStack extends cdk.Stack {
 			}
 		});
 
+		const fnAdminScannersList = new NodejsFunction(this, 'AdminScannersListFunction', {
+			entry: path.join(__dirname, '../lambda/adminpage/scanners/handler-adminpage-getScanners.ts'),
+			runtime: Runtime.NODEJS_20_X,
+			environment: {				
+				AUTHORIZED_TABLE: authorizedTable.tableName,
+			}
+		});
+
+		const fnAdminScannersAdd = new NodejsFunction(this, 'AdminScannersAddFunction', {
+			entry: path.join(__dirname, '../lambda/adminpage/scanners/handler-adminpage-addScanner.ts'),
+			runtime: Runtime.NODEJS_20_X,
+			environment: {				
+				AUTHORIZED_TABLE: authorizedTable.tableName,
+			}
+		});
+
+		const fnAdminScannersDelete = new NodejsFunction(this, 'AdminScannersDeleteFunction', {
+			entry: path.join(__dirname, '../lambda/adminpage/scanners/handler-adminpage-deleteScanner.ts'),
+			runtime: Runtime.NODEJS_20_X,
+			environment: {				
+				AUTHORIZED_TABLE: authorizedTable.tableName,
+			}
+		});
+
 		//ACCESS GRANTS
 		studentTable.grantReadWriteData(fnRegister);
 		studentTable.grantReadWriteData(fnGetQr);
@@ -163,6 +187,9 @@ export class InfrastructureStack extends cdk.Stack {
 		attendanceTable.grantReadData(fnAdminViewAttendanceByStudent);
 		attendanceTable.grantReadWriteData(fnLogAttendance);
 		authorizedTable.grantReadData(fnLogAttendance);
+		authorizedTable.grantReadData(fnAdminScannersList);
+		authorizedTable.grantReadWriteData(fnAdminScannersAdd);
+		authorizedTable.grantReadWriteData(fnAdminScannersDelete);
 		eventsTable.grantReadData(fnAdminViewAttendanceByStudent);
 		eventsTable.grantReadData(fnGetEventsInfo);
 		eventsTable.grantReadWriteData(fnAdminAddEvent);
@@ -225,5 +252,20 @@ export class InfrastructureStack extends cdk.Stack {
 		const adminDeleteStudentResource = adminMainResource.addResource('del-student');
 		adminDeleteStudentResource.addMethod('POST', withCorsIntegration(fnAdminDeleteStudent), { methodResponses: defaultCorsMethodResponses });
 		addCorsOptions(adminDeleteStudentResource);
+
+		//admin/get-scanners
+		const adminScannersListResource = adminMainResource.addResource('get-scanners');
+		adminScannersListResource.addMethod('POST', withCorsIntegration(fnAdminScannersList), { methodResponses: defaultCorsMethodResponses });
+		addCorsOptions(adminScannersListResource);
+
+		//admin/add-scanner
+		const adminScannersAddResource = adminMainResource.addResource('add-scanner');
+		adminScannersAddResource.addMethod('POST', withCorsIntegration(fnAdminScannersAdd), { methodResponses: defaultCorsMethodResponses });
+		addCorsOptions(adminScannersAddResource);
+
+		//admin/delete-scanner
+		const adminScannersDeleteResource = adminMainResource.addResource('del-scanner');
+		adminScannersDeleteResource.addMethod('POST', withCorsIntegration(fnAdminScannersDelete), { methodResponses: defaultCorsMethodResponses });
+		addCorsOptions(adminScannersDeleteResource);
 	}
 }

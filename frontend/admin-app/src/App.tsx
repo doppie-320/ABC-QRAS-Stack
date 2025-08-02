@@ -7,6 +7,7 @@ import './App.css'
 import EventsPage from './pages/EventsPage'
 import AttendancePage from './pages/AttendancePage'
 import StudentsPage from './pages/StudentsPage'
+import ScannersPage from './pages/ScannersPage'
 
 function App() {
 	return (
@@ -14,14 +15,16 @@ function App() {
 			<nav style={{ padding: "1rem", background: "#eee" }}>
 				<Link to="/">Dashboard</Link> | {" "}
 				<Link to="/events">Events</Link> | {" "}
-				<Link to="/attendance">Attendance</Link> | {" "}
-				<Link to="/students">Students Directory</Link>
+				<Link to="/scanners">Approved Scanners</Link> | {" "}				
+				<Link to="/students">Students Directory</Link> | {" "}				
+				<Link to="/attendance">Attendance</Link>
 			</nav>
 			<Routes>
 				<Route path="/" element={<></>}/>
 				<Route path="/events" element={<EventsPage/>}/>
 				<Route path="/attendance" element={<AttendancePage/>}/>
 				<Route path="/students" element={<StudentsPage/>}/>
+				<Route path="/scanners" element={<ScannersPage/>}/>
 			</Routes>
 		</Router>
 	)
