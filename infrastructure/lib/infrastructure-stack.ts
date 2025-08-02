@@ -116,7 +116,7 @@ export class InfrastructureStack extends cdk.Stack {
 			}
 		});
 
-		const fnAdminViewAttendanceByEvent = new NodejsFunction(this, 'AdminViewAttendanceByEvent', {
+		const fnAdminViewAttendanceByEvent = new NodejsFunction(this, 'AdminViewAttendanceByEventFunction', {
 			entry: path.join(__dirname, '../lambda/adminpage/attendance/handler-adminpage-attendanceByEvent.ts'),
 			runtime: Runtime.NODEJS_20_X,
 			environment: {
@@ -125,12 +125,28 @@ export class InfrastructureStack extends cdk.Stack {
 			}
 		});
 
-		const fnAdminViewAttendanceByStudent = new NodejsFunction(this, 'AdminViewAttendanceByStudent', {
+		const fnAdminViewAttendanceByStudent = new NodejsFunction(this, 'AdminViewAttendanceByStudentFunction', {
 			entry: path.join(__dirname, '../lambda/adminpage/attendance/handler-adminpage-attendanceByStudent.ts'),
 			runtime: Runtime.NODEJS_20_X,
 			environment: {
 				ATTENDANCE_TABLE: attendanceTable.tableName,
 				EVENTS_TABLE: eventsTable.tableName,
+				STUDENT_TABLE: studentTable.tableName,
+			}
+		});
+
+		const fnAdminGetAllStudents = new NodejsFunction(this, 'AdminViewAllStudentsFunction', {
+			entry: path.join(__dirname, '../lambda/adminpage/students/handler-adminpage-getAllStudents.ts'),
+			runtime: Runtime.NODEJS_20_X,
+			environment: {				
+				STUDENT_TABLE: studentTable.tableName,
+			}
+		});
+
+		const fnAdminDeleteStudent = new NodejsFunction(this, 'AdminDeleteStudentFunction', {
+			entry: path.join(__dirname, '../lambda/adminpage/students/handler-adminpage-deleteStudent.ts'),
+			runtime: Runtime.NODEJS_20_X,
+			environment: {				
 				STUDENT_TABLE: studentTable.tableName,
 			}
 		});
@@ -141,6 +157,8 @@ export class InfrastructureStack extends cdk.Stack {
 		studentTable.grantReadData(fnGetStudentInfo);
 		studentTable.grantReadData(fnAdminViewAttendanceByEvent);		
 		studentTable.grantReadData(fnAdminViewAttendanceByStudent);	
+		studentTable.grantReadData(fnAdminGetAllStudents);
+		studentTable.grantReadWriteData(fnAdminDeleteStudent);
 		attendanceTable.grantReadData(fnAdminViewAttendanceByEvent);
 		attendanceTable.grantReadData(fnAdminViewAttendanceByStudent);
 		attendanceTable.grantReadWriteData(fnLogAttendance);
@@ -197,5 +215,15 @@ export class InfrastructureStack extends cdk.Stack {
 		const adminViewAttendanceByStudentResource = adminMainResource.addResource('attendance-by-student');
 		adminViewAttendanceByStudentResource.addMethod('GET', withCorsIntegration(fnAdminViewAttendanceByStudent), { methodResponses: defaultCorsMethodResponses });
 		addCorsOptions(adminViewAttendanceByStudentResource);
+
+		//admin/get-all-students
+		const adminGetAllStudentsResource = adminMainResource.addResource('get-all-students');
+		adminGetAllStudentsResource.addMethod('GET', withCorsIntegration(fnAdminGetAllStudents), { methodResponses: defaultCorsMethodResponses });
+		addCorsOptions(adminGetAllStudentsResource);
+
+		//admin/del-student
+		const adminDeleteStudentResource = adminMainResource.addResource('del-student');
+		adminDeleteStudentResource.addMethod('POST', withCorsIntegration(fnAdminDeleteStudent), { methodResponses: defaultCorsMethodResponses });
+		addCorsOptions(adminDeleteStudentResource);
 	}
 }

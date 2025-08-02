@@ -6,6 +6,7 @@ import './App.css'
 
 import EventsPage from './pages/EventsPage'
 import AttendancePage from './pages/AttendancePage'
+import StudentsPage from './pages/StudentsPage'
 
 function App() {
 	return (
@@ -14,11 +15,13 @@ function App() {
 				<Link to="/">Dashboard</Link> | {" "}
 				<Link to="/events">Events</Link> | {" "}
 				<Link to="/attendance">Attendance</Link> | {" "}
+				<Link to="/students">Students Directory</Link>
 			</nav>
 			<Routes>
 				<Route path="/" element={<></>}/>
 				<Route path="/events" element={<EventsPage/>}/>
 				<Route path="/attendance" element={<AttendancePage/>}/>
+				<Route path="/students" element={<StudentsPage/>}/>
 			</Routes>
 		</Router>
 	)
