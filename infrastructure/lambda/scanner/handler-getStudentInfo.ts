@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { DynamoDBClient, GetItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from '@aws-sdk/util-dynamodb';
-import { responseWithCors } from "./utils/cors-response";
+import { responseWithCors } from "../utils/cors-response";
 
 const db = new DynamoDBClient({});
 const tableName = process.env.STUDENT_TABLE;

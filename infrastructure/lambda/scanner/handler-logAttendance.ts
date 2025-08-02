@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { responseWithCors } from './utils/cors-response';
+import { responseWithCors } from '../utils/cors-response';
 import { DynamoDBClient, GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
 
 const db = new DynamoDBClient({});

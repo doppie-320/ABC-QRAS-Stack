@@ -4,8 +4,8 @@ import viteLogo from '/vite.svg'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
 
-import EventsPage from './pages/Events'
-import AttendancePage from './pages/Attendance'
+import EventsPage from './pages/EventsPage'
+import AttendancePage from './pages/AttendancePage'
 
 function App() {
 	return (

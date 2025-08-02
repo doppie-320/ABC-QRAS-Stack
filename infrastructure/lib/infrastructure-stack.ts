@@ -76,7 +76,7 @@ export class InfrastructureStack extends cdk.Stack {
 		});
 
 		const fnGetStudentInfo = new NodejsFunction(this, 'GetStudentInfoFn', {
-			entry: path.join(__dirname, '../lambda/handler-getStudentInfo.ts'),
+			entry: path.join(__dirname, '../lambda/scanner/handler-getStudentInfo.ts'),
 			runtime: Runtime.NODEJS_20_X,
 			environment: {
 				STUDENT_TABLE: studentTable.tableName,
@@ -84,7 +84,7 @@ export class InfrastructureStack extends cdk.Stack {
 		});
 
 		const fnLogAttendance = new NodejsFunction(this, 'LogAttendanceFunction', {
-			entry: path.join(__dirname, '../lambda/handler-logAttendance.ts'),
+			entry: path.join(__dirname, '../lambda/scanner/handler-logAttendance.ts'),
 			runtime: Runtime.NODEJS_20_X,
 			environment: {
 				ATTENDANCE_TABLE: attendanceTable.tableName,
@@ -116,15 +116,40 @@ export class InfrastructureStack extends cdk.Stack {
 			}
 		});
 
+		const fnAdminViewAttendanceByEvent = new NodejsFunction(this, 'AdminViewAttendanceByEvent', {
+			entry: path.join(__dirname, '../lambda/adminpage/attendance/handler-adminpage-attendanceByEvent.ts'),
+			runtime: Runtime.NODEJS_20_X,
+			environment: {
+				ATTENDANCE_TABLE: attendanceTable.tableName,
+				STUDENT_TABLE: studentTable.tableName,
+			}
+		});
+
+		const fnAdminViewAttendanceByStudent = new NodejsFunction(this, 'AdminViewAttendanceByStudent', {
+			entry: path.join(__dirname, '../lambda/adminpage/attendance/handler-adminpage-attendanceByStudent.ts'),
+			runtime: Runtime.NODEJS_20_X,
+			environment: {
+				ATTENDANCE_TABLE: attendanceTable.tableName,
+				EVENTS_TABLE: eventsTable.tableName,
+				STUDENT_TABLE: studentTable.tableName,
+			}
+		});
+
 		//ACCESS GRANTS
 		studentTable.grantReadWriteData(fnRegister);
 		studentTable.grantReadWriteData(fnGetQr);
 		studentTable.grantReadData(fnGetStudentInfo);
+		studentTable.grantReadData(fnAdminViewAttendanceByEvent);		
+		studentTable.grantReadData(fnAdminViewAttendanceByStudent);	
+		attendanceTable.grantReadData(fnAdminViewAttendanceByEvent);
+		attendanceTable.grantReadData(fnAdminViewAttendanceByStudent);
 		attendanceTable.grantReadWriteData(fnLogAttendance);
 		authorizedTable.grantReadData(fnLogAttendance);
+		eventsTable.grantReadData(fnAdminViewAttendanceByStudent);
 		eventsTable.grantReadData(fnGetEventsInfo);
 		eventsTable.grantReadWriteData(fnAdminAddEvent);
 		eventsTable.grantReadWriteData(fnAdminDeleteEvent);
+		eventsTable.grantReadData(fnAdminViewAttendanceByEvent);
 
 		mainBucket.grantReadWrite(fnRegister);
 
@@ -150,10 +175,10 @@ export class InfrastructureStack extends cdk.Stack {
 			.addResource('{id}')
 			.addMethod('GET', withCorsIntegration(fnGetStudentInfo), { methodResponses: defaultCorsMethodResponses });
 
-
-		//admin/add-event
+		
 		const adminMainResource = api.root.addResource('admin');
 
+		//admin/add-event
 		const adminAddEventResource = adminMainResource.addResource('add-event');
 		adminAddEventResource.addMethod('POST', withCorsIntegration(fnAdminAddEvent), { methodResponses: defaultCorsMethodResponses });
 		addCorsOptions(adminAddEventResource);
@@ -162,5 +187,15 @@ export class InfrastructureStack extends cdk.Stack {
 		const adminDeleteEventResource = adminMainResource.addResource('del-event');
 		adminDeleteEventResource.addMethod('POST', withCorsIntegration(fnAdminDeleteEvent), { methodResponses: defaultCorsMethodResponses });
 		addCorsOptions(adminDeleteEventResource);
+
+		//admin/attendance-by-event
+		const adminViewAttendanceByEventResource = adminMainResource.addResource('attendance-by-event');
+		adminViewAttendanceByEventResource.addMethod('GET', withCorsIntegration(fnAdminViewAttendanceByEvent), { methodResponses: defaultCorsMethodResponses });
+		addCorsOptions(adminViewAttendanceByEventResource);
+
+		//admin/attendance-by-student
+		const adminViewAttendanceByStudentResource = adminMainResource.addResource('attendance-by-student');
+		adminViewAttendanceByStudentResource.addMethod('GET', withCorsIntegration(fnAdminViewAttendanceByStudent), { methodResponses: defaultCorsMethodResponses });
+		addCorsOptions(adminViewAttendanceByStudentResource);
 	}
 }
