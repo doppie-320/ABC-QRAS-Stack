@@ -7,7 +7,6 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import { addCorsOptions, defaultCorsMethodResponses, withCorsIntegration } from './apigw-util';
-import { mainBucketName } from '../../shared/links';
 
 import * as path from 'path';
 
@@ -19,6 +18,16 @@ export class InfrastructureStack extends cdk.Stack {
     const studentTable = new dynamodb.Table(this, `Students`, {
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING }
     });
+    const attendanceTable = new dynamodb.Table(this, `Attendances`, {
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+    });
+    const authorizedTable = new dynamodb.Table(this, `AuthorizedScanners`, {      
+      partitionKey: { name: 'scannerId', type: dynamodb.AttributeType.STRING },
+    });
+    const eventsTable = new dynamodb.Table(this, `EventData`, {
+      partitionKey: { name: 'eventId', type: dynamodb.AttributeType.STRING },      
+    });
     //GSIs
     studentTable.addGlobalSecondaryIndex({
       indexName: 'studentNumber-index',
@@ -26,8 +35,7 @@ export class InfrastructureStack extends cdk.Stack {
     });
 
     //S3 BUCKET
-    const mainBucket = new s3.Bucket(this, 'MainBucket', {
-      bucketName: mainBucketName,
+    const mainBucket = new s3.Bucket(this, 'MainBucket', {      
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: new s3.BlockPublicAccess({
@@ -54,6 +62,7 @@ export class InfrastructureStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(60),
       environment: {
         STUDENT_TABLE: studentTable.tableName,
+        MAINBUCKET_NAME: mainBucket.bucketName
       },
     });
 
@@ -74,10 +83,31 @@ export class InfrastructureStack extends cdk.Stack {
       },
     });
 
+    const fnLogAttendance = new NodejsFunction(this, 'LogAttendanceFunction', {
+      entry: path.join(__dirname, '../lambda/handler-logAttendance.ts'),
+      runtime: Runtime.NODEJS_20_X,
+      environment: {
+        ATTENDANCE_TABLE: attendanceTable.tableName,
+        AUTHORIZED_TABLE: authorizedTable.tableName,        
+      },
+    });
+
+    const fnGetEventsInfo = new NodejsFunction(this, 'GetEventsInfoFunction', {
+      entry: path.join(__dirname, '../lambda/handler-getEvents.ts'),
+      runtime: Runtime.NODEJS_20_X,
+      environment: {
+        EVENTS_TABLE: eventsTable.tableName
+      }
+    });
+
     //ACCESS GRANTS
     studentTable.grantReadWriteData(fnRegister);
     studentTable.grantReadWriteData(fnGetQr);
-    studentTable.grantReadData(fnGetStudentInfo);
+    studentTable.grantReadData(fnGetStudentInfo);    
+    attendanceTable.grantReadWriteData(fnLogAttendance);
+    authorizedTable.grantReadData(fnLogAttendance);    
+    eventsTable.grantReadData(fnGetEventsInfo);
+
     mainBucket.grantReadWrite(fnRegister);
 
     //APIGW
@@ -90,6 +120,13 @@ export class InfrastructureStack extends cdk.Stack {
     const qrResource = api.root.addResource('get-qr');
     qrResource.addMethod('POST', withCorsIntegration(fnGetQr), { methodResponses: defaultCorsMethodResponses });
     addCorsOptions(qrResource);
+
+    const logResource = api.root.addResource('log-attendance');
+    logResource.addMethod('POST', withCorsIntegration(fnLogAttendance), { methodResponses: defaultCorsMethodResponses});
+    addCorsOptions(logResource);
+
+    api.root.addResource('get-event-data')
+      .addMethod('GET', withCorsIntegration(fnGetEventsInfo), { methodResponses: defaultCorsMethodResponses });
 
     api.root.addResource('student')
       .addResource('{id}')

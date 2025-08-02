@@ -5,11 +5,11 @@ import bcrypt from 'bcryptjs';
 import { responseWithCors } from './utils/cors-response';
 import { error } from 'console';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { mainBucketName } from '../../shared/links';
 
 const s3 = new S3Client({});
 const db = new DynamoDBClient({});
 const STUDENT_TABLE = process.env.STUDENT_TABLE;
+const MAINBUCKET_NAME = process.env.MAINBUCKET_NAME;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
     try {
@@ -47,12 +47,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const pfpFileName = `pics/${shortName}.${fileExt}`;
 
         await s3.send(new PutObjectCommand({
-            Bucket: mainBucketName,
+            Bucket: MAINBUCKET_NAME,
             Key: pfpFileName,
             Body: buffer,
             ContentType: mimeType,
         }));
-        const pfpS3Url = `https://${mainBucketName}.s3.amazonaws.com/${pfpFileName}`;
+        const pfpS3Url = `https://${MAINBUCKET_NAME}.s3.amazonaws.com/${pfpFileName}`;
 
         const id = uuidv4();
         const hashedPassword = await bcrypt.hash(password, 10);

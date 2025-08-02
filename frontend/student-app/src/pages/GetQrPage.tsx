@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import './pages.css';
 import { useState } from 'react';
-import { backendUrl } from '../../../../shared/links';
 
 type StudentQr = {
     name: string,
@@ -22,7 +21,7 @@ export function LoginPage() {
     const loginRequest = async (): Promise<void> => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${backendUrl}/get-qr/`, {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-qr/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
