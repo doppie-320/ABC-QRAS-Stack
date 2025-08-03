@@ -33,7 +33,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             return responseWithCors(404, JSON.stringify({ error: "Student not found" }));
         }
 
-        const studentUUID = studentRes.Items[0].PK.S!.replace("STUDENT#", "");
+        const studentUUID = studentRes.Items[0].id.S!;
 
         // 2️⃣ Get all attendance logs for this student
         const attendanceRes = await db.send(new ScanCommand({
