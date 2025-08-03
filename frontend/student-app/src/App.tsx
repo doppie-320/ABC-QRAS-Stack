@@ -17,7 +17,8 @@ function HomePage() {
 
   return (
     <>
-      <h1>Welcome to MyStudent QR app.</h1>
+      <h1>ABC-QRAS - My Student QR App</h1>
+      <h2>Welcome!</h2>
       <div id='button-container'>
         <button
           onClick={() => navigate('/register')}

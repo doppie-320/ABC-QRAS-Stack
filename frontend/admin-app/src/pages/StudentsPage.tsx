@@ -5,6 +5,8 @@ interface Student {
     name: string;
     studentNumber: string;
     pictureUrl: string;
+    departmentCode?: string;
+    yearCode?: string;
 }
 
 export default function StudentsPage() {
@@ -13,6 +15,9 @@ export default function StudentsPage() {
     const [search, setSearch] = useState("");
     const [sortField, setSortField] = useState<keyof Student>("name");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+    const [departments, setDepartments] = useState<Record<string, string>>({});
+    const [yearLevels, setYearLevels] = useState<Record<string, string>>({});
 
     const fetchStudents = async () => {
         setLoading(true);
@@ -25,6 +30,16 @@ export default function StudentsPage() {
         setStudents(data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        (async () => {
+            const resDept = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/DEPTDATA`);
+            setDepartments(await resDept.json());
+
+            const resYear = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/YEARDATA`);
+            setYearLevels(await resYear.json());
+        })();
+    }, []);
 
     useEffect(() => {
         fetchStudents();
@@ -57,10 +72,18 @@ export default function StudentsPage() {
         fetchStudents();
     };
 
-    const filtered = students.filter(s =>
-        s.name.toLowerCase().includes(search.toLowerCase()) ||
-        s.studentNumber.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = students.filter(s => {
+        const deptName = departments[s.departmentCode!] || "";
+        const yearName = yearLevels[s.yearCode!] || "";
+
+        const searchLower = search.toLowerCase();
+        return (
+            s.name.toLowerCase().includes(searchLower) ||
+            s.studentNumber.toLowerCase().includes(searchLower) ||
+            deptName.toLowerCase().includes(searchLower) ||
+            yearName.toLowerCase().includes(searchLower)
+        );
+    });
 
     const sorted = [...filtered].sort((a, b) => {
         const valA = a[sortField] || "";
@@ -77,7 +100,7 @@ export default function StudentsPage() {
 
             <input
                 type="text"
-                placeholder="Search by name or student number"
+                placeholder="Search by name student number, year level, or department"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{ marginBottom: "1rem", padding: "0.5rem", width: "100%" }}
@@ -88,13 +111,15 @@ export default function StudentsPage() {
             ) : (
                 <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
                     <thead>
-                        <tr>
-                            <th>Picture</th>
-                            <th onClick={() => handleSort("name")}>Name{getSortArrow("name")}</th>
-                            <th onClick={() => handleSort("studentNumber")}>Student Number{getSortArrow("studentNumber")}</th>
-                            <th onClick={() => handleSort("id")}>UUID{getSortArrow("id")}</th>
-                            <th>Actions</th>
-                        </tr>
+                            <tr>
+                                <th>Picture</th>
+                                <th onClick={() => handleSort("name")}>Name{getSortArrow("name")}</th>
+                                <th onClick={() => handleSort("studentNumber")}>Student Number{getSortArrow("studentNumber")}</th>
+                                <th>Department</th>
+                                <th>Year</th>
+                                <th onClick={() => handleSort("id")}>UUID{getSortArrow("id")}</th>
+                                <th>Actions</th>
+                            </tr>
                     </thead>
                     <tbody>
                         {sorted.map((s) => (
@@ -108,6 +133,8 @@ export default function StudentsPage() {
                                 </td>
                                 <td>{s.name}</td>
                                 <td>{s.studentNumber}</td>
+                                <td>{departments[s.departmentCode!] || "—"}</td>
+                                <td>{yearLevels[s.yearCode!] || "—"}</td>                                
                                 <td style={{ fontSize: "0.8rem", color: "#555" }}>{s.id}</td>
                                 <td>
                                     <button

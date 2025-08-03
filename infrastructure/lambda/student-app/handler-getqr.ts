@@ -2,7 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { DynamoDBClient, QueryCommand } from '@aws-sdk/client-dynamodb';
 import bcrypt from 'bcryptjs';
 import QRCode from 'qrcode';
-import { responseWithCors } from './utils/cors-response';
+import { responseWithCors } from '../utils/cors-response';
 
 const db = new DynamoDBClient({});
 const STUDENT_TABLE = process.env.STUDENT_TABLE;
@@ -41,6 +41,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         JSON.stringify({
             id: student.id.S,
             name: student.name.S,
+            department: student.department?.S || null,
+            yearLevel: student.yearLevel?.S || null,
             qrCode
         })
     );

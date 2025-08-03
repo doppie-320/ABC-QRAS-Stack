@@ -8,7 +8,13 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "diff:dev": "cdk diff --app \"npx ts-node --prefer-ts-exts bin/dev.ts\"",
+    "diff:prod": "cdk diff --app \"npx ts-node --prefer-ts-exts bin/prod.ts\"",
+    "deploy:dev": "cdk deploy --app \"npx ts-node --prefer-ts-exts bin/dev.ts\"",
+    "deploy:prod": "cdk deploy --app \"npx ts-node --prefer-ts-exts bin/prod.ts\"",
+    "destroy:dev": "cdk destroy --app \"npx ts-node --prefer-ts-exts bin/dev.ts\"",
+    "destroy:prod": "cdk destroy --app \"npx ts-node --prefer-ts-exts bin/prod.ts\""
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.150",

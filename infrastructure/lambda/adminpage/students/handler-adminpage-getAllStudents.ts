@@ -21,7 +21,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             id: s.id.S!,
             name: s.name.S!,
             studentNumber: s.studentNumber.S!,
-            pictureUrl: s.pictureUrl?.S || ""
+            pictureUrl: s.pictureUrl?.S || "",
+            departmentCode: s.department?.S || "",
+            yearCode: s.yearLevel?.S || ""
         })) || [];
 
         return responseWithCors(200, JSON.stringify(students));

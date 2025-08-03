@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-import './App.css'
-import QRScanner from './components/QRScanner'
+import { useState, useEffect } from 'react';
+import './App.css';
+import QRScanner from './components/QRScanner';
 
 type Student = {
-	id: String,
-	studentNumber: string,
-	name: string,
-	pictureUrl?: string,
-}
+	id: string;
+	studentNumber: string;
+	name: string;
+	pictureUrl?: string;
+	department?: string; // code from backend
+	yearLevel?: string;  // code from backend
+};
 
 interface EventInfo {
 	eventId: string;
@@ -19,10 +19,12 @@ interface EventInfo {
 function App() {
 	const [showSettings, setShowSettings] = useState(false);
 	const [username, setUsername] = useState(localStorage.getItem('scannerUsername') || '');
-	const [password, setPassword] = useState(localStorage.getItem('scannerPassword') || '');	
+	const [password, setPassword] = useState(localStorage.getItem('scannerPassword') || '');
 	const [eventId, setEventId] = useState('');
 
 	const [events, setEvents] = useState<EventInfo[]>([]);
+	const [departments, setDepartments] = useState<Record<string, string>>({});
+	const [yearLevels, setYearLevels] = useState<Record<string, string>>({});
 
 	const saveCredentials = () => {
 		localStorage.setItem('scannerUsername', username);
@@ -39,13 +41,23 @@ function App() {
 		document.title = "Scanner App - QR Attendance System";
 	}, []);
 
+	// Fetch events
 	useEffect(() => {
-		const fetchEvents = async () => {
+		(async () => {
 			const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-event-data`);
-			const data = await res.json();
-			setEvents(data);
-		};
-		fetchEvents();
+			setEvents(await res.json());
+		})();
+	}, []);
+
+	// Fetch metadata
+	useEffect(() => {
+		(async () => {
+			const resDept = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/DEPTDATA`);
+			setDepartments(await resDept.json());
+
+			const resYear = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/YEARDATA`);
+			setYearLevels(await resYear.json());
+		})();
 	}, []);
 
 	const handleScan = async (text: string) => {
@@ -53,14 +65,13 @@ function App() {
 
 		try {
 			const { studentId } = JSON.parse(text);
-			const url = `${import.meta.env.VITE_BACKEND_URL}/student/${studentId}`
+			const url = `${import.meta.env.VITE_BACKEND_URL}/student/${studentId}`;
 
 			const res = await fetch(url);
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.message || 'Request failed');
 
 			setStudent(data);
-			console.log(data);
 		} catch (e: any) {
 			setError('Invalid QR or failed to fetch student info!');
 			console.error(e);
@@ -68,12 +79,11 @@ function App() {
 	};
 
 	const handleDecision = async (accept: boolean) => {
-		if(!eventId) {
+		if (!eventId) {
 			alert("You have selected an invalid event!");
 			return;
 		}
-
-		if(!student) {
+		if (!student) {
 			alert("Invalid student data!");
 			return;
 		}
@@ -81,20 +91,18 @@ function App() {
 		const url = `${import.meta.env.VITE_BACKEND_URL}/log-attendance/`;
 		const req = await fetch(url, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				studentId: student.id,
 				eventId: eventId,
-				decision: accept ? 'accept' : 'reject',								
+				decision: accept ? 'accept' : 'reject',
 				scannerId: username,
 				scannerPassword: password,
 			}),
 		});
 		const resp = await req.json();
 
-		if(req.ok) {
+		if (req.ok) {
 			alert(`BACKEND SYSTEM SAYS: ${resp.message}`);
 		} else {
 			alert(`BACKEND SYSTEM SAYS: ${resp.error}`);
@@ -119,43 +127,21 @@ function App() {
 			</div>
 
 			{showSettings && (
-				<div style={{
-					border: '1px solid #ccc',
-					borderRadius: '8px',
-					padding: '1rem',
-					maxWidth: '300px',
-					marginTop: '1rem'
-				}}>
+				<div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '1rem', maxWidth: '300px', marginTop: '1rem' }}>
 					<h3>Settings</h3>
 					<label>Username:
-						<input
-							type="text"
-							value={username}
-							onChange={(e) => setUsername(e.target.value)}
-							style={{ width: '100%' }}
-						/>
+						<input type="text" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%' }} />
 					</label>
 					<br />
 					<label>Password:
-						<input
-							type="password"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							style={{ width: '100%' }}
-						/>
+						<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%' }} />
 					</label>
 					<br />
 					<label>Event:
-						<select
-							value={eventId}
-							onChange={(e) => setEventId(e.target.value)}
-							style={{ width: '100%', marginTop: '0.5rem' }}
-						>
+						<select value={eventId} onChange={(e) => setEventId(e.target.value)} style={{ width: '100%', marginTop: '0.5rem' }}>
 							<option value="">-- None --</option>
 							{events.map((event) => (
-								<option key={event.eventId} value={event.eventId}>
-									{event.eventName}
-								</option>
+								<option key={event.eventId} value={event.eventId}>{event.eventName}</option>
 							))}
 						</select>
 					</label>
@@ -167,8 +153,9 @@ function App() {
 
 			{!showSettings && (
 				<>
-					<h1>QR Attendance Scanner</h1>
-					<p>Version 08022025-0138</p>
+					<h3>ABC-QRAS: Scanner App</h3>
+					<p style={{fontWeight: 'lighter', fontSize: 'smaller', color: 'gray'}}>This application should be distributed to authorized personnel only.</p>
+					<p>Version 08032025</p>
 
 					{!qrText && <QRScanner onScan={handleScan} />}
 
@@ -180,27 +167,94 @@ function App() {
 					)}
 
 					{student && (
-						<div>
-							<h2>Student Info:</h2>
+						<div
+							style={{
+								maxWidth: '100%',
+								margin: '0 auto',
+								padding: '0.5rem',
+								textAlign: 'center',
+							}}
+						>
+							<h2 style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>Student Info</h2>
+
 							{student.pictureUrl && (
 								<img
 									src={student.pictureUrl}
 									alt="Profile"
-									style={{ width: '150px', height: '150px', borderRadius: '5px', objectFit: 'cover', marginBottom: '1rem' }}
+									style={{
+										width: '80%',
+										maxWidth: '250px',
+										borderRadius: '8px',
+										objectFit: 'cover',
+										marginBottom: '0.5rem',
+									}}
 								/>
 							)}
-							<p><strong>Name:</strong> {student.name}</p>
-							<p><strong>Student Number:</strong> {student.studentNumber}</p>
 
-							<button onClick={() => handleDecision(true)} style={{ marginRight: '1rem' }}>✅ Approve</button>
-							<button onClick={() => handleDecision(false)} style={{ marginRight: '1rem' }}>❌ Deny</button>
+							<p style={{ fontSize: '1.2rem', margin: '0.2rem 0' }}>
+								<strong>Name:</strong> {student.name}
+							</p>
+							<p style={{ fontSize: '1.2rem', margin: '0.2rem 0' }}>
+								<strong>Student No:</strong> {student.studentNumber}
+							</p>
+							<p style={{ fontSize: '1.1rem', margin: '0.2rem 0' }}>
+								<strong>Department:</strong> {departments[student.department ?? ''] || 'Unknown'}
+							</p>
+							<p style={{ fontSize: '1.1rem', margin: '0.2rem 0 0.5rem' }}>
+								<strong>Year Level:</strong> {yearLevels[student.yearLevel ?? ''] || 'Unknown'}
+							</p>
 
-							{status && <p>{status}</p>}
+							<div
+								style={{
+									display: 'flex',
+									gap: '0.5rem',
+									justifyContent: 'center',
+									marginTop: '0.5rem',
+								}}
+							>
+								<button
+									onClick={() => handleDecision(true)}
+									style={{
+										backgroundColor: '#28a745',
+										color: '#fff',
+										fontSize: '1.2rem',
+										padding: '0.7rem 1rem',
+										border: 'none',
+										borderRadius: '8px',
+										cursor: 'pointer',
+										flex: 1,
+									}}
+								>
+									✅ Approve
+								</button>
+								<button
+									onClick={() => handleDecision(false)}
+									style={{
+										backgroundColor: '#dc3545',
+										color: '#fff',
+										fontSize: '1.2rem',
+										padding: '0.7rem 1rem',
+										border: 'none',
+										borderRadius: '8px',
+										cursor: 'pointer',
+										flex: 1,
+									}}
+								>
+									❌ Deny
+								</button>
+							</div>
+
+							{status && (
+								<p style={{ marginTop: '0.5rem', fontSize: '1rem' }}>{status}</p>
+							)}
 						</div>
-					)}</>
+					)}
+
+
+				</>
 			)}
 		</div>
-	)
+	);
 }
 
 export default App;
