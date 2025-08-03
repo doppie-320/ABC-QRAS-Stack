@@ -20,6 +20,13 @@ export default function ScannersPage() {
             },
             method: "POST"
         });
+
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("adminToken");
+            window.location.href = "/login";
+            return;
+        }
+
         const data = await res.json();
         setScanners(data);
         setLoading(false);
@@ -31,7 +38,7 @@ export default function ScannersPage() {
 
     const addScanner = async () => {
         if (!newScannerId.trim() || !newPassword.trim()) return;
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-scanner`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-scanner`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -39,6 +46,13 @@ export default function ScannersPage() {
             },
             body: JSON.stringify({ scannerId: newScannerId, password: newPassword })
         });
+
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("adminToken");
+            window.location.href = "/login";
+            return;
+        }
+
         setNewScannerId("");
         setNewPassword("");
         fetchScanners();
@@ -46,7 +60,7 @@ export default function ScannersPage() {
 
     const deleteScanner = async (id: string) => {
         if (!window.confirm(`Delete scanner ${id}?`)) return;
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-scanner`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-scanner`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -54,6 +68,13 @@ export default function ScannersPage() {
             },
             body: JSON.stringify({ scannerId: id })
         });
+
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("adminToken");
+            window.location.href = "/login";
+            return;
+        }
+
         fetchScanners();
     };
 

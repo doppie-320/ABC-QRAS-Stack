@@ -27,6 +27,12 @@ export default function StudentsPage() {
                 Authorization: `Bearer ${localStorage.getItem("adminToken")}`
             },
         });
+        
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("adminToken");
+            window.location.href = "/login";
+            return;
+        }
 
         const data = await res.json();
         setStudents(prev => append ? [...prev, ...data.items] : data.items);

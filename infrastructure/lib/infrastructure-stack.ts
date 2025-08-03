@@ -168,6 +168,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     const fnAdminGetAllStudents = makeFn('AdminGetAllStudentsFn', '../lambda/adminpage/students/handler-adminpage-getAllStudents.ts', {
       STUDENT_TABLE: studentTable.tableName,
+	  METADATA_TABLE: studentMetadataTable.tableName,
       JWT_SECRET
     });
 
@@ -228,6 +229,8 @@ export class InfrastructureStack extends cdk.Stack {
 
     studentMetadataTable.grantReadData(fnGetMetadata);
     studentMetadataTable.grantReadData(fnGetStudentInfo);
+	studentMetadataTable.grantReadData(fnAdminGetAllStudents);
+	studentMetadataTable.grantReadData(fnRegister);
 
     mainBucket.grantReadWrite(fnRegister);
 

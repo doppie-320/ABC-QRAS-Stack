@@ -29,7 +29,7 @@ export default function EventsPage() {
 
     const addEvent = async () => {
         if (!newEventName.trim() || !newEventId.trim()) return;
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-event`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-event`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -37,6 +37,13 @@ export default function EventsPage() {
             },
             body: JSON.stringify({ eventId: newEventId, eventName: newEventName })
         });
+
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("adminToken");
+            window.location.href = "/login";
+            return;
+        }
+
         setNewEventName(""); setNewEventId("");
         fetchEvents();
     };
@@ -44,7 +51,7 @@ export default function EventsPage() {
     const deleteEvent = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this event?")) return;
 
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-event`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-event`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -52,6 +59,13 @@ export default function EventsPage() {
             },
             body: JSON.stringify({ eventId: id }),
         });
+
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("adminToken");
+            window.location.href = "/login";
+            return;
+        }
+
         fetchEvents();
     }
 
@@ -62,7 +76,7 @@ export default function EventsPage() {
 
     const saveEdit = async () => {
         if(!editingId) return;
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-event`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-event`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -70,6 +84,13 @@ export default function EventsPage() {
             },
             body: JSON.stringify({ eventId: editingId, eventName: editName }),
         });
+
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("adminToken");
+            window.location.href = "/login";
+            return;
+        }
+
         setEditingId(null);
         setEditName("");
         fetchEvents();
