@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom'
 import { LoginPage } from './pages/GetQrPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { useEffect } from 'react';
 
 function HomePage() {
   const navigate = useNavigate();
@@ -32,6 +33,10 @@ function HomePage() {
 }
 
 function App() {
+  useEffect(() => {
+		document.title = "My QR App - QR Attendance System";
+	}, []);
+
   return (
     <>
       <Router>

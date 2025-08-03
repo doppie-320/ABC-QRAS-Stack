@@ -31,7 +31,7 @@ export function LoginPage() {
                     password: loginPassword
                 }),
             });
-                    
+
             if (response.ok) {
                 if (response.status == 200) {
                     const data = await response.json();
@@ -41,9 +41,9 @@ export function LoginPage() {
                         studentNumber: loginSN,
                         qrData: data.qrCode
                     });
-                }            
+                }
             } else {
-                const errData = await response.json();                
+                const errData = await response.json();
                 setErrorMessage(`${errData.error}`);
             }
 
@@ -83,23 +83,45 @@ export function LoginPage() {
                         //No error message
                         (<>
                             {studentData ?
-                                //Student data displayed
+                                // Student data displayed
                                 (<>
                                     <div
                                         style={{
                                             display: 'flex',
-                                            flexDirection: 'column' 
+                                            flexDirection: 'column'
                                         }}
                                     >
                                         <h1>{studentData.name}</h1>
                                         <p>{loginSN}</p>
                                         <img
                                             src={studentData.qrData}
-                                            style={{ borderRadius: '1rem' }}
+                                            style={{ borderRadius: '1rem', maxWidth: '250px' }}
+                                            alt="Student QR"
                                         />
+
+                                        <button
+                                            style={{
+                                                marginTop: '10px',
+                                                backgroundColor: '#6CB4EE',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '10px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => {
+                                                const link = document.createElement('a');
+                                                link.href = studentData.qrData;
+                                                link.download = `${studentData.studentNumber}-qr.png`;
+                                                link.click();
+                                            }}
+                                        >
+                                            📥 Download QR
+                                        </button>
                                     </div>
-                                </>) :
-                                //Still going to login
+                                </>)
+                                :
+                                // Still going to login
                                 (<>
                                     <h2>Get your QR here</h2>
 
@@ -110,20 +132,24 @@ export function LoginPage() {
                                             type="text"
                                             value={loginSN}
                                             onChange={(e) => { setLoginSN(e.target.value) }}
-                                        ></input>
+                                        />
                                         <input
                                             className='styled-input'
                                             placeholder='Password...'
                                             type="password"
                                             value={loginPassword}
                                             onChange={(e) => { setLoginPassword(e.target.value) }}
-                                        ></input>
+                                        />
                                         <button
-                                            style={{backgroundColor: '#C9A0DC'}}
+                                            style={{ backgroundColor: '#C9A0DC' }}
                                             onClick={() => loginRequest()}
-                                        >Get your QR now!</button>
+                                        >
+                                            Get your QR now!
+                                        </button>
                                     </div>
-                                </>)}
+                                </>)
+                            }
+
                         </>)
                     }
                 </>)}

@@ -24,7 +24,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }));
 
         // Map latest scan per student
-        const latestScanMap: Record<string, { decision: string; timestamp: string }> = {};
+        const latestScanMap: Record<string, { decision: string; timestamp: string, scannerId: string | null }> = {};
 
         for (const item of attendanceRes.Items || []) {
             const studentId = item.SK.S!.split("#")[1];
@@ -35,7 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                 !latestScanMap[studentId] ||
                 new Date(ts).getTime() > new Date(latestScanMap[studentId].timestamp).getTime()
             ) {
-                latestScanMap[studentId] = { decision, timestamp: ts };
+                latestScanMap[studentId] = { decision, timestamp: ts, scannerId: item.scannerId?.S || null };
             }
         }
 
@@ -59,12 +59,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             const latest = latestScanMap[student.studentId];
             if (latest) {
                 if (latest.decision === "accept") {
-                    present.push({ ...student, timestamp: latest.timestamp });
+                    present.push({ ...student, timestamp: latest.timestamp, scannerId: latest.scannerId });
                 } else if (latest.decision === "reject") {
-                    rejected.push({ ...student, timestamp: latest.timestamp });
+                    rejected.push({ ...student, timestamp: latest.timestamp, scannerId: latest.scannerId });
                 }
             } else {
-                absent.push({ ...student, timestamp: null });
+                absent.push({ ...student, timestamp: null, scannerId: null });
             }
         }
 

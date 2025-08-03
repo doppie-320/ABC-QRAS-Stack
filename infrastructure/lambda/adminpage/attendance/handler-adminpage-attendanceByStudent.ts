@@ -39,7 +39,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }));
 
         // 3️⃣ Keep only the latest record per event
-        const eventMap: Record<string, { status: string; timestamp?: string }> = {};
+        const eventMap: Record<string, { status: string; timestamp?: string, scannerId: string | null }> = {};
         for (const item of attendanceRes.Items || []) {
             const eventId = item.PK.S!.replace("EVENT#", "");
             const decision = item.decision.S!;
@@ -51,7 +51,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             ) {
                 eventMap[eventId] = {
                     status: decision === "accept" ? "Present" : "Rejected",
-                    timestamp: ts
+                    timestamp: ts,
+                    scannerId: item.scannerId?.S || null
                 };
             }
         }
@@ -71,7 +72,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             eventId,
             eventName: eventsMap[eventId] || eventId,
             status: data.status,
-            timestamp: data.timestamp || null
+            timestamp: data.timestamp || null,
+            scannerId: data.scannerId || null
         }));
 
         return responseWithCors(200, JSON.stringify(result));

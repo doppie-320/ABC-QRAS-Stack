@@ -1,6 +1,4 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
 
@@ -10,6 +8,10 @@ import StudentsPage from './pages/StudentsPage'
 import ScannersPage from './pages/ScannersPage'
 
 function App() {
+	useEffect(() => {
+		document.title = "Admin Control Panel - QR Attendance System";
+	}, []);
+
 	return (
 		<Router>
 			<nav style={{ padding: "1rem", background: "#eee" }}>

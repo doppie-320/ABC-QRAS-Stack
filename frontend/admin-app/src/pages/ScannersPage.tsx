@@ -10,6 +10,7 @@ export default function ScannersPage() {
     const [newScannerId, setNewScannerId] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [loading, setLoading] = useState(true);
+    const [revealed, setRevealed] = useState<Record<string, boolean>>({}); // track reveal per scanner
 
     const fetchScanners = async () => {
         setLoading(true);
@@ -45,6 +46,10 @@ export default function ScannersPage() {
             body: JSON.stringify({ scannerId: id })
         });
         fetchScanners();
+    };
+
+    const toggleReveal = (id: string) => {
+        setRevealed(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
     return (
@@ -84,7 +89,19 @@ export default function ScannersPage() {
                         {scanners.map(s => (
                             <tr key={s.scannerId}>
                                 <td>{s.scannerId}</td>
-                                <td>{s.password}</td>
+                                <td>
+                                    {revealed[s.scannerId] ? (
+                                        s.password
+                                    ) : (
+                                        "••••••••"
+                                    )}
+                                    <button
+                                        onClick={() => toggleReveal(s.scannerId)}
+                                        style={{ marginLeft: "0.5rem" }}
+                                    >
+                                        {revealed[s.scannerId] ? "Hide" : "Show"}
+                                    </button>
+                                </td>
                                 <td>
                                     <button onClick={() => deleteScanner(s.scannerId)}>Delete</button>
                                 </td>

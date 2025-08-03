@@ -6,6 +6,7 @@ interface Student {
     studentNumber: string;
     timestamp?: string | null;
     status?: string;
+    scannerId?: string
 }
 
 interface AttendanceEvent {
@@ -162,26 +163,28 @@ export default function AttendancePage() {
                     <p>Loading attendance...</p>
                 ) : (
                     <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
-                        <thead>
-                            <tr>
-                                <th onClick={() => handleSort("studentId")}>Student ID{getSortArrow("studentId")}</th>
-                                <th onClick={() => handleSort("name")}>Name{getSortArrow("name")}</th>
-                                <th onClick={() => handleSort("studentNumber")}>Student Number{getSortArrow("studentNumber")}</th>
-                                <th onClick={() => handleSort("status")}>Status{getSortArrow("status")}</th>
-                                <th onClick={() => handleSort("timestamp")}>Timestamp{getSortArrow("timestamp")}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedStudents.map(s => (
-                                <tr key={s.studentId} style={getStatusStyle(s.status || "")}>
-                                    <td>{s.studentId}</td>
-                                    <td>{s.name}</td>
-                                    <td>{s.studentNumber}</td>
-                                    <td>{s.status}</td>
-                                    <td>{formatTimestamp(s.timestamp)}</td>
+                            <thead>
+                                <tr>
+                                    <th onClick={() => handleSort("studentId")}>Student ID{getSortArrow("studentId")}</th>
+                                    <th onClick={() => handleSort("name")}>Name{getSortArrow("name")}</th>
+                                    <th onClick={() => handleSort("studentNumber")}>Student Number{getSortArrow("studentNumber")}</th>
+                                    <th onClick={() => handleSort("status")}>Status{getSortArrow("status")}</th>
+                                    <th onClick={() => handleSort("scannerId")}>Scanner{getSortArrow("scannerId")}</th>
+                                    <th onClick={() => handleSort("timestamp")}>Timestamp{getSortArrow("timestamp")}</th>
                                 </tr>
-                            ))}
-                        </tbody>
+                            </thead>
+                            <tbody>
+                                {sortedStudents.map(s => (
+                                    <tr key={s.studentId} style={getStatusStyle(s.status || "")}>
+                                        <td>{s.studentId}</td>
+                                        <td>{s.name}</td>
+                                        <td>{s.studentNumber}</td>
+                                        <td>{s.status}</td>
+                                        <td>{s.scannerId || "—"}</td>
+                                        <td>{formatTimestamp(s.timestamp)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
                     </table>
                 )
             )}
@@ -205,6 +208,7 @@ export default function AttendancePage() {
                         <tr>
                             <th onClick={() => handleSortStudent("eventName")}>Event{getSortArrowStudent("eventName")}</th>
                             <th onClick={() => handleSortStudent("status")}>Status{getSortArrowStudent("status")}</th>
+                            <th onClick={() => handleSortStudent("scannerId")}>Scanner{getSortArrowStudent("scannerId")}</th>
                             <th onClick={() => handleSortStudent("timestamp")}>Timestamp{getSortArrowStudent("timestamp")}</th>
                         </tr>
                     </thead>
@@ -213,6 +217,7 @@ export default function AttendancePage() {
                             <tr key={idx} style={getStatusStyle(row.status)}>
                                 <td>{row.eventName}</td>
                                 <td>{row.status}</td>
+                                <td>{row.scannerId || "—"}</td>
                                 <td>{formatTimestamp(row.timestamp)}</td>
                             </tr>
                         ))}

@@ -36,6 +36,10 @@ function App() {
 	const [status, setStatus] = useState<string | null>(null);
 
 	useEffect(() => {
+		document.title = "Scanner App - QR Attendance System";
+	}, []);
+
+	useEffect(() => {
 		const fetchEvents = async () => {
 			const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-event-data`);
 			const data = await res.json();
@@ -164,7 +168,7 @@ function App() {
 			{!showSettings && (
 				<>
 					<h1>QR Attendance Scanner</h1>
-					<p>Version 07212025-0138</p>
+					<p>Version 08022025-0138</p>
 
 					{!qrText && <QRScanner onScan={handleScan} />}
 
