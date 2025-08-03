@@ -15,6 +15,9 @@ export default function ScannersPage() {
     const fetchScanners = async () => {
         setLoading(true);
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/get-scanners`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
             method: "POST"
         });
         const data = await res.json();
@@ -30,7 +33,10 @@ export default function ScannersPage() {
         if (!newScannerId.trim() || !newPassword.trim()) return;
         await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-scanner`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
             body: JSON.stringify({ scannerId: newScannerId, password: newPassword })
         });
         setNewScannerId("");
@@ -42,7 +48,10 @@ export default function ScannersPage() {
         if (!window.confirm(`Delete scanner ${id}?`)) return;
         await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-scanner`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
             body: JSON.stringify({ scannerId: id })
         });
         fetchScanners();

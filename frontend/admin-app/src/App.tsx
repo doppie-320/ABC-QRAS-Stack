@@ -6,6 +6,8 @@ import EventsPage from './pages/EventsPage'
 import AttendancePage from './pages/AttendancePage'
 import StudentsPage from './pages/StudentsPage'
 import ScannersPage from './pages/ScannersPage'
+import AdminLogin from './pages/LoginPage'
+import RequireAdminAuth from './components/RequireAdminAuth'
 
 function App() {
 	useEffect(() => {
@@ -14,7 +16,7 @@ function App() {
 
 	return (
 		<Router>
-			<nav style={{ padding: "1rem", background: "#eee" }}>
+			<nav style={{ padding: "1rem", background: "#eee" }}>				
 				<Link to="/">Dashboard</Link> | {" "}
 				<Link to="/events">Events</Link> | {" "}
 				<Link to="/scanners">Approved Scanners</Link> | {" "}				
@@ -22,11 +24,13 @@ function App() {
 				<Link to="/attendance">Attendance</Link>
 			</nav>
 			<Routes>
-				<Route path="/" element={<></>}/>
-				<Route path="/events" element={<EventsPage/>}/>
-				<Route path="/attendance" element={<AttendancePage/>}/>
-				<Route path="/students" element={<StudentsPage/>}/>
-				<Route path="/scanners" element={<ScannersPage/>}/>
+				<Route path="/login" element={<AdminLogin/>}/>				
+
+				<Route path="/" element={<RequireAdminAuth><></></RequireAdminAuth>}/>
+				<Route path="/events" element={<RequireAdminAuth><EventsPage/></RequireAdminAuth>}/>
+				<Route path="/attendance" element={<RequireAdminAuth><AttendancePage/></RequireAdminAuth>}/>
+				<Route path="/students" element={<RequireAdminAuth><StudentsPage/></RequireAdminAuth>}/>
+				<Route path="/scanners" element={<RequireAdminAuth><ScannersPage/></RequireAdminAuth>}/>
 			</Routes>
 		</Router>
 	)

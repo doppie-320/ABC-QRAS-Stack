@@ -1,12 +1,18 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { DynamoDBClient, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 import { responseWithCors } from "../../utils/cors-response";
+import { verifyAdminAuth } from "../auth/handler-adminpage-auth-verify";
 
 const db = new DynamoDBClient({});
 const STUDENT_TABLE = process.env.STUDENT_TABLE!;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
     try {
+        const user = verifyAdminAuth(event.headers);
+        if(!user) {
+            return responseWithCors(403, JSON.stringify({ error: "Not authorized" }));
+        }
+
         const body = JSON.parse(event.body || "{}");
         if (!body.id) {
             return responseWithCors(400, JSON.stringify({ error: "Missing student id" }));

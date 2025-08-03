@@ -31,7 +31,10 @@ export default function EventsPage() {
         if (!newEventName.trim() || !newEventId.trim()) return;
         await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-event`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
             body: JSON.stringify({ eventId: newEventId, eventName: newEventName })
         });
         setNewEventName(""); setNewEventId("");
@@ -43,7 +46,10 @@ export default function EventsPage() {
 
         await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-event`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
             body: JSON.stringify({ eventId: id }),
         });
         fetchEvents();
@@ -58,7 +64,10 @@ export default function EventsPage() {
         if(!editingId) return;
         await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/add-event`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
             body: JSON.stringify({ eventId: editingId, eventName: editName }),
         });
         setEditingId(null);

@@ -16,7 +16,11 @@ export default function StudentsPage() {
 
     const fetchStudents = async () => {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/get-all-students`);
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/get-all-students`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
+        });
         const data = await res.json();
         setStudents(data);
         setLoading(false);
@@ -44,7 +48,10 @@ export default function StudentsPage() {
         if (!window.confirm("Are you sure you want to delete this student?")) return;
         await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-student`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
             body: JSON.stringify({ id })
         });
         fetchStudents();

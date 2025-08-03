@@ -10,6 +10,8 @@ import { addCorsOptions, defaultCorsMethodResponses, withCorsIntegration } from 
 
 import * as path from 'path';
 
+const JWT_SECRET = "abc-qras-jwt-supersecret";
+
 export class InfrastructureStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
@@ -27,6 +29,9 @@ export class InfrastructureStack extends cdk.Stack {
 		});
 		const eventsTable = new dynamodb.Table(this, `EventData`, {
 			partitionKey: { name: 'eventId', type: dynamodb.AttributeType.STRING },
+		});
+		const adminsTable = new dynamodb.Table(this, `Admins`, {
+			partitionKey: { name: 'username', type: dynamodb.AttributeType.STRING },
 		});
 		//GSIs
 		studentTable.addGlobalSecondaryIndex({
@@ -104,7 +109,9 @@ export class InfrastructureStack extends cdk.Stack {
 			entry: path.join(__dirname, '../lambda/adminpage/events/handler-adminpage-addevent.ts'),
 			runtime: Runtime.NODEJS_20_X,
 			environment: {
-				EVENTS_TABLE: eventsTable.tableName
+				EVENTS_TABLE: eventsTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
 		});
 
@@ -112,7 +119,9 @@ export class InfrastructureStack extends cdk.Stack {
 			entry: path.join(__dirname, '../lambda/adminpage/events/handler-adminpage-deleteevent.ts'),
 			runtime: Runtime.NODEJS_20_X,
 			environment: {
-				EVENTS_TABLE: eventsTable.tableName
+				EVENTS_TABLE: eventsTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
 		});
 
@@ -122,6 +131,8 @@ export class InfrastructureStack extends cdk.Stack {
 			environment: {
 				ATTENDANCE_TABLE: attendanceTable.tableName,
 				STUDENT_TABLE: studentTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
 		});
 
@@ -132,55 +143,76 @@ export class InfrastructureStack extends cdk.Stack {
 				ATTENDANCE_TABLE: attendanceTable.tableName,
 				EVENTS_TABLE: eventsTable.tableName,
 				STUDENT_TABLE: studentTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
 		});
 
 		const fnAdminGetAllStudents = new NodejsFunction(this, 'AdminViewAllStudentsFunction', {
 			entry: path.join(__dirname, '../lambda/adminpage/students/handler-adminpage-getAllStudents.ts'),
 			runtime: Runtime.NODEJS_20_X,
-			environment: {				
+			environment: {
 				STUDENT_TABLE: studentTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
 		});
 
 		const fnAdminDeleteStudent = new NodejsFunction(this, 'AdminDeleteStudentFunction', {
 			entry: path.join(__dirname, '../lambda/adminpage/students/handler-adminpage-deleteStudent.ts'),
 			runtime: Runtime.NODEJS_20_X,
-			environment: {				
+			environment: {
 				STUDENT_TABLE: studentTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
 		});
 
 		const fnAdminScannersList = new NodejsFunction(this, 'AdminScannersListFunction', {
 			entry: path.join(__dirname, '../lambda/adminpage/scanners/handler-adminpage-getScanners.ts'),
 			runtime: Runtime.NODEJS_20_X,
-			environment: {				
+			environment: {
 				AUTHORIZED_TABLE: authorizedTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
 		});
 
 		const fnAdminScannersAdd = new NodejsFunction(this, 'AdminScannersAddFunction', {
 			entry: path.join(__dirname, '../lambda/adminpage/scanners/handler-adminpage-addScanner.ts'),
 			runtime: Runtime.NODEJS_20_X,
-			environment: {				
+			environment: {
 				AUTHORIZED_TABLE: authorizedTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
 		});
 
 		const fnAdminScannersDelete = new NodejsFunction(this, 'AdminScannersDeleteFunction', {
 			entry: path.join(__dirname, '../lambda/adminpage/scanners/handler-adminpage-deleteScanner.ts'),
 			runtime: Runtime.NODEJS_20_X,
-			environment: {				
+			environment: {
 				AUTHORIZED_TABLE: authorizedTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+
 			}
+		});
+
+		const fnAdminAuthLogin = new NodejsFunction(this, 'AdminAuthLoginFunction', {
+			entry: path.join(__dirname, '../lambda/adminpage/auth/handler-adminpage-auth-login.ts'),
+			runtime: Runtime.NODEJS_20_X,
+			environment: {
+				ADMIN_TABLE: adminsTable.tableName,
+				JWT_SECRET: JWT_SECRET,
+			},
 		});
 
 		//ACCESS GRANTS
 		studentTable.grantReadWriteData(fnRegister);
 		studentTable.grantReadWriteData(fnGetQr);
 		studentTable.grantReadData(fnGetStudentInfo);
-		studentTable.grantReadData(fnAdminViewAttendanceByEvent);		
-		studentTable.grantReadData(fnAdminViewAttendanceByStudent);	
+		studentTable.grantReadData(fnAdminViewAttendanceByEvent);
+		studentTable.grantReadData(fnAdminViewAttendanceByStudent);
 		studentTable.grantReadData(fnAdminGetAllStudents);
 		studentTable.grantReadWriteData(fnAdminDeleteStudent);
 		attendanceTable.grantReadData(fnAdminViewAttendanceByEvent);
@@ -195,6 +227,7 @@ export class InfrastructureStack extends cdk.Stack {
 		eventsTable.grantReadWriteData(fnAdminAddEvent);
 		eventsTable.grantReadWriteData(fnAdminDeleteEvent);
 		eventsTable.grantReadData(fnAdminViewAttendanceByEvent);
+		adminsTable.grantReadData(fnAdminAuthLogin);
 
 		mainBucket.grantReadWrite(fnRegister);
 
@@ -220,7 +253,7 @@ export class InfrastructureStack extends cdk.Stack {
 			.addResource('{id}')
 			.addMethod('GET', withCorsIntegration(fnGetStudentInfo), { methodResponses: defaultCorsMethodResponses });
 
-		
+
 		const adminMainResource = api.root.addResource('admin');
 
 		//admin/add-event
@@ -267,5 +300,10 @@ export class InfrastructureStack extends cdk.Stack {
 		const adminScannersDeleteResource = adminMainResource.addResource('del-scanner');
 		adminScannersDeleteResource.addMethod('POST', withCorsIntegration(fnAdminScannersDelete), { methodResponses: defaultCorsMethodResponses });
 		addCorsOptions(adminScannersDeleteResource);
+
+		//admin/login
+		const adminAuthLoginResource = adminMainResource.addResource('login');
+		adminAuthLoginResource.addMethod('POST', withCorsIntegration(fnAdminAuthLogin), { methodResponses: defaultCorsMethodResponses });
+		addCorsOptions(adminAuthLoginResource);
 	}
 }

@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { responseWithCors } from "../../utils/cors-response";
+import { verifyAdminAuth } from "../auth/handler-adminpage-auth-verify";
 
 const db = new DynamoDBClient({});
 const ATTENDANCE_TABLE = process.env.ATTENDANCE_TABLE!;
@@ -8,6 +9,11 @@ const STUDENT_TABLE = process.env.STUDENT_TABLE!;
 const EVENTS_TABLE = process.env.EVENTS_TABLE!;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
+    const user = verifyAdminAuth(event.headers);
+    if (!user) {
+        return responseWithCors(403, JSON.stringify({ error: "Not authorized" }));
+    }
+
     const friendlyId = event.queryStringParameters?.studentId;
     if (!friendlyId) {
         return responseWithCors(400, JSON.stringify({ error: "Missing studentId" }));
@@ -27,7 +33,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             return responseWithCors(404, JSON.stringify({ error: "Student not found" }));
         }
 
-        const studentUUID = studentRes.Items[0].id.S!;
+        const studentUUID = studentRes.Items[0].PK.S!.replace("STUDENT#", "");
 
         // 2️⃣ Get all attendance logs for this student
         const attendanceRes = await db.send(new ScanCommand({

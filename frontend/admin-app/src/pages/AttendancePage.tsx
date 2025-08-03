@@ -39,7 +39,11 @@ export default function AttendancePage() {
     const loadAttendanceByEvent = () => {
         if (!selectedEvent) return;
         setLoading(true);
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/attendance-by-event?eventId=${selectedEvent}`)
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/attendance-by-event?eventId=${selectedEvent}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
+        })
             .then(res => res.json())
             .then(data => {
                 const combined = [
@@ -54,7 +58,11 @@ export default function AttendancePage() {
 
     const loadAttendanceByStudent = () => {
         if (!searchStudent.trim()) return;
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/attendance-by-student?studentId=${searchStudent}`)
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/attendance-by-student?studentId=${searchStudent}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
+        })
             .then(res => res.json())
             .then(data => setStudentHistory(data));
     };

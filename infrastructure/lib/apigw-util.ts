@@ -42,35 +42,39 @@ export const defaultCorsMethodResponses: apigw.MethodResponse[] = [
     },
 ]
 
-export function addCorsOptions(resource: apigw.Resource, allowedMethods: string[] = ['OPTIONS', 'POST', 'DELETE']) {
-  resource.addMethod('OPTIONS', new apigw.MockIntegration({
-    integrationResponses: [
-      {
-        statusCode: '200',
-        responseParameters: {
-          'method.response.header.Access-Control-Allow-Headers': "'Content-Type'",
-          'method.response.header.Access-Control-Allow-Origin': "'*'",
-          'method.response.header.Access-Control-Allow-Methods': `'${allowedMethods.join(',')}'`
-        },
-        responseTemplates: {
-          'application/json': ''
+export function addCorsOptions(
+    resource: apigw.Resource,
+    allowedMethods: string[] = ['OPTIONS', 'POST', 'GET', 'DELETE']
+) {
+    resource.addMethod('OPTIONS', new apigw.MockIntegration({
+        integrationResponses: [
+            {
+                statusCode: '200',
+                responseParameters: {
+                    'method.response.header.Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+                    'method.response.header.Access-Control-Allow-Origin': "'*'",
+                    'method.response.header.Access-Control-Allow-Methods': `'${allowedMethods.join(',')}'`
+                },
+                responseTemplates: {
+                    'application/json': ''
+                }
+            }
+        ],
+        passthroughBehavior: apigw.PassthroughBehavior.NEVER,
+        requestTemplates: {
+            'application/json': '{"statusCode": 200}'
         }
-      }
-    ],
-    passthroughBehavior: apigw.PassthroughBehavior.NEVER,
-    requestTemplates: {
-      'application/json': '{"statusCode": 200}'
-    }
-  }), {
-    methodResponses: [
-      {
-        statusCode: '200',
-        responseParameters: {
-          'method.response.header.Access-Control-Allow-Headers': true,
-          'method.response.header.Access-Control-Allow-Origin': true,
-          'method.response.header.Access-Control-Allow-Methods': true
-        }
-      }
-    ]
-  });
+    }), {
+        methodResponses: [
+            {
+                statusCode: '200',
+                responseParameters: {
+                    'method.response.header.Access-Control-Allow-Headers': true,
+                    'method.response.header.Access-Control-Allow-Origin': true,
+                    'method.response.header.Access-Control-Allow-Methods': true
+                }
+            }
+        ]
+    });
 }
+
