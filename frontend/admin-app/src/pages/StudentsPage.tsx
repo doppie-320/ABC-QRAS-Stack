@@ -4,95 +4,39 @@ interface Student {
     id: string;
     name: string;
     studentNumber: string;
+    departmentName: string;
+    yearName: string;
     pictureUrl: string;
-    departmentCode?: string;
-    yearCode?: string;
 }
 
 export default function StudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [sortField, setSortField] = useState<keyof Student>("name");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+    const [lastKey, setLastKey] = useState<string | null>(null);
 
-    const [departments, setDepartments] = useState<Record<string, string>>({});
-    const [yearLevels, setYearLevels] = useState<Record<string, string>>({});
-
-    const fetchStudents = async () => {
+    const fetchStudents = async (searchTerm = "", append = false, startKey: string | null = null) => {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/get-all-students`, {
+        const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/admin/get-all-students`);
+        if (searchTerm) url.searchParams.set("search", searchTerm);
+        if (startKey) url.searchParams.set("lastKey", startKey);
+        url.searchParams.set("limit", "50");
+
+        const res = await fetch(url.toString(), {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("adminToken")}`
             },
         });
+
         const data = await res.json();
-        setStudents(data);
+        setStudents(prev => append ? [...prev, ...data.items] : data.items);
+        setLastKey(data.lastKey);
         setLoading(false);
     };
 
     useEffect(() => {
-        (async () => {
-            const resDept = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/DEPTDATA`);
-            setDepartments(await resDept.json());
-
-            const resYear = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/YEARDATA`);
-            setYearLevels(await resYear.json());
-        })();
-    }, []);
-
-    useEffect(() => {
-        fetchStudents();
-    }, []);
-
-    const handleSort = (field: keyof Student) => {
-        if (sortField === field) {
-            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-        } else {
-            setSortField(field);
-            setSortOrder("asc");
-        }
-    };
-
-    const getSortArrow = (field: keyof Student) => {
-        if (sortField !== field) return "";
-        return sortOrder === "asc" ? " ▲" : " ▼";
-    };
-
-    const deleteStudent = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this student?")) return;
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-student`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
-            },
-            body: JSON.stringify({ id })
-        });
-        fetchStudents();
-    };
-
-    const filtered = students.filter(s => {
-        const deptName = departments[s.departmentCode!] || "";
-        const yearName = yearLevels[s.yearCode!] || "";
-
-        const searchLower = search.toLowerCase();
-        return (
-            s.name.toLowerCase().includes(searchLower) ||
-            s.studentNumber.toLowerCase().includes(searchLower) ||
-            deptName.toLowerCase().includes(searchLower) ||
-            yearName.toLowerCase().includes(searchLower)
-        );
-    });
-
-    const sorted = [...filtered].sort((a, b) => {
-        const valA = a[sortField] || "";
-        const valB = b[sortField] || "";
-        if (typeof valA === "string" && typeof valB === "string") {
-            return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        }
-        return 0;
-    });
+        fetchStudents(search);
+    }, [search]);
 
     return (
         <div style={{ padding: "1rem" }}>
@@ -100,54 +44,54 @@ export default function StudentsPage() {
 
             <input
                 type="text"
-                placeholder="Search by name student number, year level, or department"
+                placeholder="Search by name, student number, dept, year"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{ marginBottom: "1rem", padding: "0.5rem", width: "100%" }}
             />
 
-            {loading ? (
-                <p>Loading students...</p>
-            ) : (
-                <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
-                    <thead>
+            {loading && <p>Loading...</p>}
+
+            {!loading && (
+                <>
+                    <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
+                        <thead>
                             <tr>
                                 <th>Picture</th>
-                                <th onClick={() => handleSort("name")}>Name{getSortArrow("name")}</th>
-                                <th onClick={() => handleSort("studentNumber")}>Student Number{getSortArrow("studentNumber")}</th>
+                                <th>Name</th>
+                                <th>Student Number</th>
                                 <th>Department</th>
-                                <th>Year</th>
-                                <th onClick={() => handleSort("id")}>UUID{getSortArrow("id")}</th>
+                                <th>Year Level</th>
+                                <th>UUID</th>
                                 <th>Actions</th>
                             </tr>
-                    </thead>
-                    <tbody>
-                        {sorted.map((s) => (
-                            <tr key={s.id}>
-                                <td>
-                                    <img
-                                        src={s.pictureUrl}
-                                        alt={s.name}
-                                        style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "8px" }}
-                                    />
-                                </td>
-                                <td>{s.name}</td>
-                                <td>{s.studentNumber}</td>
-                                <td>{departments[s.departmentCode!] || "—"}</td>
-                                <td>{yearLevels[s.yearCode!] || "—"}</td>                                
-                                <td style={{ fontSize: "0.8rem", color: "#555" }}>{s.id}</td>
-                                <td>
-                                    <button
-                                        style={{ backgroundColor: "#c0392b", color: "#fff", padding: "0.3rem 0.6rem" }}
-                                        onClick={() => deleteStudent(s.id)}
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {students.map(s => (
+                                <tr key={s.id}>
+                                    <td><img src={s.pictureUrl} style={{ width: "60px", height: "60px", objectFit: "cover" }} /></td>
+                                    <td>{s.name}</td>
+                                    <td>{s.studentNumber}</td>
+                                    <td>{s.departmentName}</td>
+                                    <td>{s.yearName}</td>
+                                    <td style={{ fontSize: "0.8rem" }}>{s.id}</td>
+                                    <td>
+                                        <button onClick={() => console.log("Delete student", s.id)}>Delete</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {lastKey && (
+                        <button
+                            style={{ marginTop: "1rem" }}
+                            onClick={() => fetchStudents(search, true, lastKey)}
+                        >
+                            Load More
+                        </button>
+                    )}
+                </>
             )}
         </div>
     );

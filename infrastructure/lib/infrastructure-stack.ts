@@ -121,7 +121,8 @@ export class InfrastructureStack extends cdk.Stack {
     // Lambdas
     const fnRegister = makeFn('RegisterFn', '../lambda/student-app/handler-register.ts', {
       STUDENT_TABLE: studentTable.tableName,
-      MAINBUCKET_NAME: mainBucket.bucketName
+      MAINBUCKET_NAME: mainBucket.bucketName,
+	  METADATA_TABLE: studentMetadataTable.tableName,
     }, 60);
 
     const fnGetQr = makeFn('GetQrFn', '../lambda/student-app/handler-getqr.ts', {
