@@ -325,7 +325,7 @@ export function RegisterPage() {
                                     <button
                                         type="submit"
                                         style={{
-                                            backgroundColor: passwordError ? '#888' : '#C9A0DC',
+                                            backgroundColor: passwordError ? '#888' : '#3a87b5',
                                             marginTop: '1rem',
                                             cursor: passwordError ? 'not-allowed' : 'pointer'
                                         }}

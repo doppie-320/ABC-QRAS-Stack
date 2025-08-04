@@ -182,7 +182,7 @@ export function LoginPage() {
                                             onChange={(e) => setLoginPassword(e.target.value)}
                                         />
                                         <button
-                                            style={{ backgroundColor: '#C9A0DC' }}
+                                            style={{ backgroundColor: '#3a87b5' }}
                                             onClick={loginRequest}
                                         >
                                             Get your QR now!
