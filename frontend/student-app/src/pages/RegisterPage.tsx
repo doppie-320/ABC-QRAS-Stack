@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 
 import Croppie from 'croppie';
 import 'croppie/croppie.css';
+import { NavBar } from '../components/NavBar';
 
 export function RegisterPage() {
     const navigate = useNavigate();
@@ -190,6 +191,8 @@ export function RegisterPage() {
 
     return (
         <>
+            <NavBar/>
+
             {isLoading ?
                 (<h1>Please wait</h1>) :
                 (<>
@@ -341,9 +344,8 @@ export function RegisterPage() {
                 style={{
                     marginTop: '2rem',
                     padding: '0.75rem 1.25rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer'
+                    borderRadius: '8px',                    
+                    cursor: 'pointer',
                 }}
             >
                 Back

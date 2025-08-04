@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Scanner {
     scannerId: string;
@@ -12,6 +13,8 @@ export default function ScannersPage() {
     const [loading, setLoading] = useState(true);
     const [revealed, setRevealed] = useState<Record<string, boolean>>({}); // track reveal per scanner
 
+    const navigate = useNavigate();
+
     const fetchScanners = async () => {
         setLoading(true);
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/get-scanners`, {
@@ -23,7 +26,7 @@ export default function ScannersPage() {
 
         if (res.status === 401 || res.status === 403) {
             localStorage.removeItem("adminToken");
-            window.location.href = "/login";
+            navigate("/login");
             return;
         }
 
@@ -49,7 +52,7 @@ export default function ScannersPage() {
 
         if (res.status === 401 || res.status === 403) {
             localStorage.removeItem("adminToken");
-            window.location.href = "/login";
+            navigate("/login");
             return;
         }
 
@@ -71,7 +74,7 @@ export default function ScannersPage() {
 
         if (res.status === 401 || res.status === 403) {
             localStorage.removeItem("adminToken");
-            window.location.href = "/login";
+            navigate("/login");
             return;
         }
 

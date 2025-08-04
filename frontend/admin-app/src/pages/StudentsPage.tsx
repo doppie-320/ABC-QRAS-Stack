@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Student {
     id: string;
@@ -15,6 +16,8 @@ export default function StudentsPage() {
     const [search, setSearch] = useState("");
     const [lastKey, setLastKey] = useState<string | null>(null);
 
+    const navigate = useNavigate();
+
     const fetchStudents = async (searchTerm = "", append = false, startKey: string | null = null) => {
         setLoading(true);
         const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/admin/get-all-students`);
@@ -30,7 +33,7 @@ export default function StudentsPage() {
         
         if (res.status === 401 || res.status === 403) {
             localStorage.removeItem("adminToken");
-            window.location.href = "/login";
+            navigate("/login");
             return;
         }
 

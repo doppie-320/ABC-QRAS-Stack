@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import './pages.css';
 import { useState } from 'react';
+import { NavBar } from '../components/NavBar';
 
 type StudentQr = {
     name: string;
@@ -71,6 +72,8 @@ export function LoginPage() {
 
     return (
         <>
+            <NavBar/>
+
             {isLoading ? (
                 <h1>Please wait...</h1>
             ) : (

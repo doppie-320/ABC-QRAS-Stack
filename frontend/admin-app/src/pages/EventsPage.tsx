@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface EventInfo {
     eventId: string;
@@ -12,6 +13,8 @@ export default function EventsPage() {
     const [newEventId, setNewEventId] = useState("");
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
+
+    const navigate = useNavigate();
 
     const fetchEvents = async () => {
         setLoading(true);
@@ -40,7 +43,7 @@ export default function EventsPage() {
 
         if (res.status === 401 || res.status === 403) {
             localStorage.removeItem("adminToken");
-            window.location.href = "/login";
+            navigate("/login");
             return;
         }
 
@@ -62,7 +65,7 @@ export default function EventsPage() {
 
         if (res.status === 401 || res.status === 403) {
             localStorage.removeItem("adminToken");
-            window.location.href = "/login";
+            navigate("/login");
             return;
         }
 
@@ -87,7 +90,7 @@ export default function EventsPage() {
 
         if (res.status === 401 || res.status === 403) {
             localStorage.removeItem("adminToken");
-            window.location.href = "/login";
+            navigate("/login");
             return;
         }
 
