@@ -110,7 +110,7 @@ export default function StudentsPage() {
 
     return (
         <div style={{ padding: "1rem" }}>
-            <h2>All Students</h2>
+            <h2>Students Directory (search v2)</h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
                 {/* Row 1: Name + Student Number */}

@@ -1,237 +1,269 @@
 import { useState, useEffect } from "react";
-
-interface Student {
-    studentId: string;
-    name: string;
-    studentNumber: string;
-    timestamp?: string | null;
-    status?: string;
-    scannerId?: string
-}
-
-interface AttendanceEvent {
-    eventId: string;
-    eventName: string;
-}
+import Select from "react-select";
+import { multiSelectDarkTheme } from "../components/MultiSelectStyle";
 
 export default function AttendancePage() {
-    const [events, setEvents] = useState<AttendanceEvent[]>([]);
-    const [selectedEvent, setSelectedEvent] = useState("");
-    const [studentsWithStatus, setStudentsWithStatus] = useState<Student[]>([]);
-    const [searchStudent, setSearchStudent] = useState("");
-    const [studentHistory, setStudentHistory] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+	const [nameSearch, setNameSearch] = useState("");
+	const [studentNumberSearch, setStudentNumberSearch] = useState("");
+	const [selectedYears, setSelectedYears] = useState<string[]>([]);
+	const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
+	const [yearLevelData, setYearLevelData] = useState<Record<string, string>>({});
+	const [departmentData, setDepartmentData] = useState<Record<string, string>>({});
+	const [eventOptions, setEventOptions] = useState<{ value: string; label: string }[]>([]);
+	const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+	const [statusFilter, setStatusFilter] = useState<string | null>(null);
+	const [timeFrom, setTimeFrom] = useState("");
+	const [timeTo, setTimeTo] = useState("");
+	const [scannerOptions, setScannerOptions] = useState<{ value: string; label: string }[]>([]);
+	const [selectedScanner, setSelectedScanner] = useState<string | null>(null);
 
-    // Sorting states (event table)
-    const [sortField, setSortField] = useState<keyof Student>("timestamp");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+	const [items, setItems] = useState<any[]>([]);
+	const [page, setPage] = useState(0);
+	const [totalPages, setTotalPages] = useState(1);
+	const limit = 50;
 
-    // Sorting states (student history table)
-    const [sortStudentField, setSortStudentField] = useState<keyof any>("timestamp");
-    const [sortStudentOrder, setSortStudentOrder] = useState<"asc" | "desc">("desc");
+	useEffect(() => {
+		(async () => {
+			const resDept = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/DEPTDATA`);
+			setDepartmentData(await resDept.json());
 
-    useEffect(() => {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/get-event-data`)
-            .then(res => res.json())
-            .then(data => setEvents(data));
-    }, []);
+			const resYear = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/YEARDATA`);
+			setYearLevelData(await resYear.json());
+		})();
 
-    const loadAttendanceByEvent = () => {
-        if (!selectedEvent) return;
-        setLoading(true);
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/attendance-by-event?eventId=${selectedEvent}`, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
-            },
-        })
-            .then(res => res.json())
-            .then(data => {
-                const combined = [
-                    ...(data.present || []).map((s: Student) => ({ ...s, status: "Present" })),
-                    ...(data.rejected || []).map((s: Student) => ({ ...s, status: "Absent (Rejected)" })),
-                    ...(data.absent || []).map((s: Student) => ({ ...s, status: "Absent (Not yet scanned)" }))
-                ];
-                setStudentsWithStatus(combined);
-                setLoading(false);
-            });
-    };
+		// Fetch events
+		fetch(`${import.meta.env.VITE_BACKEND_URL}/get-event-data`)
+			.then(res => res.json())
+			.then(data => {
+				setEventOptions(data.map((e: any) => ({ value: e.eventId, label: e.eventName })));
+			});
 
-    const loadAttendanceByStudent = () => {
-        if (!searchStudent.trim()) return;
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/attendance-by-student?studentId=${searchStudent}`, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
-            },
-        })
-            .then(res => res.json())
-            .then(data => setStudentHistory(data));
-    };
+		// Fetch scanners
+		fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/get-scanners`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+			}
+		})
+			.then(res => res.json())
+			.then(data => {
+				setScannerOptions(data.map((s: any) => ({ value: s.scannerId, label: s.scannerId })));
+			});
+	}, []);
 
-    const getStatusStyle = (status: string) => {
-        switch (status) {
-            case "Present":
-                return { backgroundColor: "#27ae60", color: "#fff" };
-            case "Absent (Rejected)":
-                return { backgroundColor: "#e67e22", color: "#fff" };
-            case "Absent (Not yet scanned)":
-                return { backgroundColor: "#c0392b", color: "#fff" };
-            default:
-                return { backgroundColor: "#fff", color: "#000" };
-        }
-    };
+	useEffect(() => {
+		fetchData();
+	}, [page]);
 
-    const formatTimestamp = (ts?: string | null) => {
-        if (!ts) return "—";
-        const date = new Date(ts);
-        return date.toLocaleString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-        });
-    };
+	const fetchData = () => {
+		const params = new URLSearchParams();
+		params.append("limit", String(limit));
+		params.append("page", String(page));
+		if (nameSearch) params.append("name", nameSearch);
+		if (studentNumberSearch) params.append("studentNumber", studentNumberSearch);
+		if (selectedYears.length) params.append("years", selectedYears.join(","));
+		if (selectedDepts.length) params.append("departments", selectedDepts.join(","));
+		if (selectedEvent) params.append("eventId", selectedEvent);
+		if (statusFilter) params.append("status", statusFilter);
+		if (selectedScanner) params.append("scannerId", selectedScanner);
+		if (timeFrom) params.append("timeFrom", timeFrom);
+		if (timeTo) params.append("timeTo", timeTo);
 
-    // Sorting helpers (event table)
-    const handleSort = (field: keyof Student) => {
-        if (sortField === field) {
-            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-        } else {
-            setSortField(field);
-            setSortOrder("asc");
-        }
-    };
+		fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/query-attendance?${params.toString()}`, {
+			headers: {
+				Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+			}
+		})
+			.then(res => res.json())
+			.then(data => {
+				setItems(data.items || []);
+				setTotalPages(data.totalPages || 1);
+			});
+	};
 
-    const getSortArrow = (field: keyof Student) => {
-        if (sortField !== field) return "";
-        return sortOrder === "asc" ? " ▲" : " ▼";
-    };
+	const formatTimestamp = (ts: string | null) => {
+		if (!ts) return "—";
+		const date = new Date(ts);
+		return date.toLocaleString("en-US", {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit"
+		});
+	};
 
-    const sortedStudents = [...studentsWithStatus].sort((a, b) => {
-        const valA = a[sortField] || "";
-        const valB = b[sortField] || "";
-        if (sortField === "timestamp") {
-            const timeA = valA ? new Date(valA as string).getTime() : 0;
-            const timeB = valB ? new Date(valB as string).getTime() : 0;
-            return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
-        }
-        if (typeof valA === "string" && typeof valB === "string") {
-            return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        }
-        return 0;
-    });
+	return (
+		<div style={{ padding: "1rem", color: "#fff" }}>
+			<h2>Attendance Search</h2>
 
-    // Sorting helpers (student history table)
-    const handleSortStudent = (field: keyof any) => {
-        if (sortStudentField === field) {
-            setSortStudentOrder(sortStudentOrder === "asc" ? "desc" : "asc");
-        } else {
-            setSortStudentField(field);
-            setSortStudentOrder("asc");
-        }
-    };
+			{/* Row 1: Name + Student Number */}
+			<div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.75rem" }}>
+				<div style={{ flex: 1, minWidth: "250px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Name</label>
+					<input
+						type="text"
+						placeholder="Search by name"
+						value={nameSearch}
+						onChange={(e) => setNameSearch(e.target.value)}
+						style={{ padding: "0.5rem", width: "100%" }}
+					/>
+				</div>
+				<div style={{ flex: 1, minWidth: "250px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Student Number</label>
+					<input
+						type="text"
+						placeholder="Search by student number"
+						value={studentNumberSearch}
+						onChange={(e) => setStudentNumberSearch(e.target.value)}
+						style={{ padding: "0.5rem", width: "100%" }}
+					/>
+				</div>
+			</div>
 
-    const getSortArrowStudent = (field: keyof any) => {
-        if (sortStudentField !== field) return "";
-        return sortStudentOrder === "asc" ? " ▲" : " ▼";
-    };
+			{/* Row 2: Year Level + Department */}
+			<div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.75rem" }}>
+				<div style={{ flex: 1, minWidth: "200px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Year Level</label>
+					<Select
+						isMulti
+						options={Object.entries(yearLevelData).map(([value, label]) => ({ value, label }))}
+						value={selectedYears.map(y => ({ value: y, label: yearLevelData[y] }))}
+						onChange={(selected) => setSelectedYears(selected.map(opt => opt.value))}
+						styles={multiSelectDarkTheme}
+					/>
+				</div>
+				<div style={{ flex: 1, minWidth: "200px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Department</label>
+					<Select
+						isMulti
+						options={Object.entries(departmentData).map(([value, label]) => ({ value, label }))}
+						value={selectedDepts.map(y => ({ value: y, label: departmentData[y] }))}
+						onChange={(selected) => setSelectedDepts(selected.map(opt => opt.value))}
+						styles={multiSelectDarkTheme}
+					/>
+				</div>
+			</div>
 
-    const sortedStudentHistory = [...studentHistory].sort((a, b) => {
-        const valA = a[sortStudentField] || "";
-        const valB = b[sortStudentField] || "";
-        if (sortStudentField === "timestamp") {
-            const timeA = valA ? new Date(valA).getTime() : 0;
-            const timeB = valB ? new Date(valB).getTime() : 0;
-            return sortStudentOrder === "asc" ? timeA - timeB : timeB - timeA;
-        }
-        if (typeof valA === "string" && typeof valB === "string") {
-            return sortStudentOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        }
-        return 0;
-    });
+			{/* Row 3: Event + Status + Scanner */}
+			<div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.75rem" }}>
+				<div style={{ flex: 1, minWidth: "200px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Event</label>
+					<Select
+						options={eventOptions}
+						value={eventOptions.find(e => e.value === selectedEvent) || null}
+						onChange={(opt) => setSelectedEvent(opt ? opt.value : null)}
+						isClearable
+						styles={multiSelectDarkTheme}
+					/>
+				</div>
+				<div style={{ flex: 1, minWidth: "200px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Status</label>
+					<Select
+						options={[
+							{ value: "accepted", label: "Accepted" },
+							{ value: "rejected", label: "Rejected" },
+							{ value: "no-scan", label: "No Scan" },
+							{ value: "absent", label: "Absent" }
+						]}
+						value={
+							statusFilter
+								? { value: statusFilter, label: statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1) }
+								: null
+						}
+						onChange={(opt) => setStatusFilter(opt ? opt.value : null)}
+						isClearable
+						styles={multiSelectDarkTheme}
+					/>
+				</div>
+				<div style={{ flex: 1, minWidth: "200px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Scanner</label>
+					<Select
+						options={scannerOptions}
+						value={scannerOptions.find(s => s.value === selectedScanner) || null}
+						onChange={(opt) => setSelectedScanner(opt ? opt.value : null)}
+						isClearable
+						styles={multiSelectDarkTheme}
+					/>
+				</div>
+			</div>
 
-    return (
-        <div style={{ padding: "1rem" }}>
-            <h2>Attendance Management</h2>
+			{/* Row 4: Time From + Time To */}
+			<div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.75rem" }}>
+				<div style={{ flex: 1, minWidth: "180px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Time From</label>
+					<input
+						type="datetime-local"
+						value={timeFrom}
+						onChange={(e) => setTimeFrom(e.target.value)}
+						style={{ padding: "0.5rem", width: "100%" }}
+					/>
+				</div>
+				<div style={{ flex: 1, minWidth: "180px" }}>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Time To</label>
+					<input
+						type="datetime-local"
+						value={timeTo}
+						onChange={(e) => setTimeTo(e.target.value)}
+						style={{ padding: "0.5rem", width: "100%" }}
+					/>
+				</div>
+			</div>
 
-            {/* Event Attendance */}
-            <div style={{ marginBottom: "1rem" }}>
-                <select value={selectedEvent} onChange={(e) => setSelectedEvent(e.target.value)}>
-                    <option value="">-- Select Event --</option>
-                    {events.map(e => (
-                        <option key={e.eventId} value={e.eventId}>{e.eventName}</option>
-                    ))}
-                </select>
-                <button onClick={loadAttendanceByEvent}>Load</button>
-            </div>
+			<button
+				onClick={() => {
+					setPage(0);
+					fetchData();
+				}}
+				style={{ padding: "0.5rem 1rem", background: "#444", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
+			>
+				Search
+			</button>
 
-            {selectedEvent && (
-                loading ? (
-                    <p>Loading attendance...</p>
-                ) : (
-                    <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
-                            <thead>
-                                <tr>
-                                    <th onClick={() => handleSort("studentId")}>Student ID{getSortArrow("studentId")}</th>
-                                    <th onClick={() => handleSort("name")}>Name{getSortArrow("name")}</th>
-                                    <th onClick={() => handleSort("studentNumber")}>Student Number{getSortArrow("studentNumber")}</th>
-                                    <th onClick={() => handleSort("status")}>Status{getSortArrow("status")}</th>
-                                    <th onClick={() => handleSort("scannerId")}>Scanner{getSortArrow("scannerId")}</th>
-                                    <th onClick={() => handleSort("timestamp")}>Timestamp{getSortArrow("timestamp")}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sortedStudents.map(s => (
-                                    <tr key={s.studentId} style={getStatusStyle(s.status || "")}>
-                                        <td>{s.studentId}</td>
-                                        <td>{s.name}</td>
-                                        <td>{s.studentNumber}</td>
-                                        <td>{s.status}</td>
-                                        <td>{s.scannerId || "—"}</td>
-                                        <td>{formatTimestamp(s.timestamp)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                    </table>
-                )
-            )}
+			{/* Table */}
+			<table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%", marginTop: '1rem' }}>
+				<thead>
+					<tr style={{ background: "#333" }}>
+						<th>Name</th>
+						<th>Student #</th>
+						<th>Year</th>
+						<th>Department</th>
+						<th>Status</th>
+						<th>Scanner</th>
+						<th>Timestamp</th>
+						<th>Event ID</th>
+					</tr>
+				</thead>
+				<tbody>
+					{items.map((s) => (
+						<tr key={s.id} style={{ background: "#222" }}>
+							<td>{s.name}</td>
+							<td>{s.studentNumber}</td>
+							<td>{s.yearName}</td>
+							<td>{s.departmentName}</td>
+							<td>{s.status}</td>
+							<td>{s.scannerId || "—"}</td>
+							<td>{formatTimestamp(s.timestamp)}</td>
+							<td>{s.eventId || "—"}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
 
-            <hr />
-
-            {/* Student History */}
-            <div style={{ marginTop: "1rem" }}>
-                <input
-                    type="text"
-                    placeholder="Enter Student ID"
-                    value={searchStudent}
-                    onChange={(e) => setSearchStudent(e.target.value)}
-                />
-                <button onClick={loadAttendanceByStudent}>Search</button>
-            </div>
-
-            {studentHistory.length > 0 && (
-                <table border={1} cellPadding={8} style={{ marginTop: "1rem", width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                        <tr>
-                            <th onClick={() => handleSortStudent("eventName")}>Event{getSortArrowStudent("eventName")}</th>
-                            <th onClick={() => handleSortStudent("status")}>Status{getSortArrowStudent("status")}</th>
-                            <th onClick={() => handleSortStudent("scannerId")}>Scanner{getSortArrowStudent("scannerId")}</th>
-                            <th onClick={() => handleSortStudent("timestamp")}>Timestamp{getSortArrowStudent("timestamp")}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedStudentHistory.map((row, idx) => (
-                            <tr key={idx} style={getStatusStyle(row.status)}>
-                                <td>{row.eventName}</td>
-                                <td>{row.status}</td>
-                                <td>{row.scannerId || "—"}</td>
-                                <td>{formatTimestamp(row.timestamp)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
-        </div>
-    );
+			{/* Pagination (centered like Students page) */}
+			<div
+				style={{
+					display: "flex",
+					justifyContent: "center",
+					marginTop: "1rem",
+					gap: "0.5rem",
+				}}
+			>
+				<button disabled={page <= 0} onClick={() => setPage(page - 1)}>Prev</button>
+				<span>Page {page + 1} of {totalPages}</span>
+				<button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>Next</button>
+			</div>
+		</div>
+	);
 }

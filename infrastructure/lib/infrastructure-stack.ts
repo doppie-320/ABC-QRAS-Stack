@@ -153,16 +153,10 @@ export class InfrastructureStack extends cdk.Stack {
       JWT_SECRET
     });
 
-    const fnAdminViewAttendanceByEvent = makeFn('AdminViewAttendanceByEventFn', '../lambda/adminpage/attendance/handler-adminpage-attendanceByEvent.ts', {
+    const fnAdminQueryAttendance = makeFn('AdminQueryAttendanceFn', '../lambda/adminpage/attendance/handler-adminpage-attendanceQuery.ts', {
       ATTENDANCE_TABLE: attendanceTable.tableName,
       STUDENT_TABLE: studentTable.tableName,
-      JWT_SECRET
-    });
-
-    const fnAdminViewAttendanceByStudent = makeFn('AdminViewAttendanceByStudentFn', '../lambda/adminpage/attendance/handler-adminpage-attendanceByStudent.ts', {
-      ATTENDANCE_TABLE: attendanceTable.tableName,
-      EVENTS_TABLE: eventsTable.tableName,
-      STUDENT_TABLE: studentTable.tableName,
+      METADATA_TABLE: studentMetadataTable.tableName,
       JWT_SECRET
     });
 
@@ -204,33 +198,30 @@ export class InfrastructureStack extends cdk.Stack {
     // Grants
     studentTable.grantReadWriteData(fnRegister);
     studentTable.grantReadWriteData(fnGetQr);
-    studentTable.grantReadData(fnGetStudentInfo);
-    studentTable.grantReadData(fnAdminViewAttendanceByEvent);
-    studentTable.grantReadData(fnAdminViewAttendanceByStudent);
+    studentTable.grantReadData(fnGetStudentInfo);        
+    studentTable.grantReadData(fnAdminQueryAttendance);
     studentTable.grantReadData(fnAdminSearchStudents);
     studentTable.grantReadWriteData(fnAdminDeleteStudent);
-
-    attendanceTable.grantReadData(fnAdminViewAttendanceByEvent);
-    attendanceTable.grantReadData(fnAdminViewAttendanceByStudent);
-    attendanceTable.grantReadWriteData(fnLogAttendance);
+        
+    attendanceTable.grantReadData(fnAdminQueryAttendance);
+    attendanceTable.grantReadWriteData(fnLogAttendance);    
 
     authorizedTable.grantReadData(fnLogAttendance);
     authorizedTable.grantReadData(fnAdminScannersList);
     authorizedTable.grantReadWriteData(fnAdminScannersAdd);
     authorizedTable.grantReadWriteData(fnAdminScannersDelete);
-
-    eventsTable.grantReadData(fnAdminViewAttendanceByStudent);
+    
     eventsTable.grantReadData(fnGetEventsInfo);
     eventsTable.grantReadWriteData(fnAdminAddEvent);
-    eventsTable.grantReadWriteData(fnAdminDeleteEvent);
-    eventsTable.grantReadData(fnAdminViewAttendanceByEvent);
+    eventsTable.grantReadWriteData(fnAdminDeleteEvent);    
 
     adminsTable.grantReadData(fnAdminAuthLogin);
 
     studentMetadataTable.grantReadData(fnGetMetadata);
     studentMetadataTable.grantReadData(fnGetStudentInfo);
-	studentMetadataTable.grantReadData(fnAdminSearchStudents);
-	studentMetadataTable.grantReadData(fnRegister);
+    studentMetadataTable.grantReadData(fnAdminSearchStudents);
+    studentMetadataTable.grantReadData(fnAdminQueryAttendance);
+    studentMetadataTable.grantReadData(fnRegister);    
 
     mainBucket.grantReadWrite(fnRegister);
 
@@ -268,13 +259,9 @@ export class InfrastructureStack extends cdk.Stack {
     adminDeleteEventResource.addMethod('POST', withCorsIntegration(fnAdminDeleteEvent), { methodResponses: defaultCorsMethodResponses });
     addCorsOptions(adminDeleteEventResource);
 
-    const adminViewAttendanceByEventResource = adminMainResource.addResource('attendance-by-event');
-    adminViewAttendanceByEventResource.addMethod('GET', withCorsIntegration(fnAdminViewAttendanceByEvent), { methodResponses: defaultCorsMethodResponses });
-    addCorsOptions(adminViewAttendanceByEventResource);
-
-    const adminViewAttendanceByStudentResource = adminMainResource.addResource('attendance-by-student');
-    adminViewAttendanceByStudentResource.addMethod('GET', withCorsIntegration(fnAdminViewAttendanceByStudent), { methodResponses: defaultCorsMethodResponses });
-    addCorsOptions(adminViewAttendanceByStudentResource);
+    const adminQueryAttendanceResource = adminMainResource.addResource('query-attendance');
+    adminQueryAttendanceResource.addMethod('GET', withCorsIntegration(fnAdminQueryAttendance), { methodResponses: defaultCorsMethodResponses });
+    addCorsOptions(adminQueryAttendanceResource);
 
     const adminSearchStudentsResource = adminMainResource.addResource('search-students');
     adminSearchStudentsResource.addMethod('GET', withCorsIntegration(fnAdminSearchStudents), { methodResponses: defaultCorsMethodResponses });
