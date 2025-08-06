@@ -166,9 +166,9 @@ export class InfrastructureStack extends cdk.Stack {
       JWT_SECRET
     });
 
-    const fnAdminGetAllStudents = makeFn('AdminGetAllStudentsFn', '../lambda/adminpage/students/handler-adminpage-getAllStudents.ts', {
+    const fnAdminSearchStudents = makeFn('AdminSearchStudentsFn', '../lambda/adminpage/students/handler-adminpage-searchStudents.ts', {
       STUDENT_TABLE: studentTable.tableName,
-	  METADATA_TABLE: studentMetadataTable.tableName,
+	    METADATA_TABLE: studentMetadataTable.tableName,
       JWT_SECRET
     });
 
@@ -207,7 +207,7 @@ export class InfrastructureStack extends cdk.Stack {
     studentTable.grantReadData(fnGetStudentInfo);
     studentTable.grantReadData(fnAdminViewAttendanceByEvent);
     studentTable.grantReadData(fnAdminViewAttendanceByStudent);
-    studentTable.grantReadData(fnAdminGetAllStudents);
+    studentTable.grantReadData(fnAdminSearchStudents);
     studentTable.grantReadWriteData(fnAdminDeleteStudent);
 
     attendanceTable.grantReadData(fnAdminViewAttendanceByEvent);
@@ -229,7 +229,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     studentMetadataTable.grantReadData(fnGetMetadata);
     studentMetadataTable.grantReadData(fnGetStudentInfo);
-	studentMetadataTable.grantReadData(fnAdminGetAllStudents);
+	studentMetadataTable.grantReadData(fnAdminSearchStudents);
 	studentMetadataTable.grantReadData(fnRegister);
 
     mainBucket.grantReadWrite(fnRegister);
@@ -276,9 +276,9 @@ export class InfrastructureStack extends cdk.Stack {
     adminViewAttendanceByStudentResource.addMethod('GET', withCorsIntegration(fnAdminViewAttendanceByStudent), { methodResponses: defaultCorsMethodResponses });
     addCorsOptions(adminViewAttendanceByStudentResource);
 
-    const adminGetAllStudentsResource = adminMainResource.addResource('get-all-students');
-    adminGetAllStudentsResource.addMethod('GET', withCorsIntegration(fnAdminGetAllStudents), { methodResponses: defaultCorsMethodResponses });
-    addCorsOptions(adminGetAllStudentsResource);
+    const adminSearchStudentsResource = adminMainResource.addResource('search-students');
+    adminSearchStudentsResource.addMethod('GET', withCorsIntegration(fnAdminSearchStudents), { methodResponses: defaultCorsMethodResponses });
+    addCorsOptions(adminSearchStudentsResource);
 
     const adminDeleteStudentResource = adminMainResource.addResource('del-student');
     adminDeleteStudentResource.addMethod('POST', withCorsIntegration(fnAdminDeleteStudent), { methodResponses: defaultCorsMethodResponses });

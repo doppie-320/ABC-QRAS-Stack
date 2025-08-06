@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
+import { multiSelectDarkTheme } from "../components/MultiSelectStyle";
 
 interface Student {
     id: string;
@@ -13,18 +15,36 @@ interface Student {
 export default function StudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState("");
-    const [lastKey, setLastKey] = useState<string | null>(null);
+
+    //Filters
+    const [nameSearch, setNameSearch] = useState("");
+    const [studentNumberSearch, setStudentNumberSearch] = useState("");
+    const [selectedYears, setSelectedYears] = useState<string[]>([]);
+    const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
+
+    //Metadata
+    const [departmentData, setDepartmentData] = useState<Record<string, string>>({});
+    const [yearLevelData, setYearLevelData] = useState<Record<string, string>>({});
+
+    //Pagination
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const limit = 50;
 
     const navigate = useNavigate();
 
-    const fetchStudents = async (searchTerm = "", append = false, startKey: string | null = null) => {
+    const fetchStudents = async () => {
         setLoading(true);
-        const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/admin/get-all-students`);
-        if (searchTerm) url.searchParams.set("search", searchTerm);
-        if (startKey) url.searchParams.set("lastKey", startKey);
-        url.searchParams.set("limit", "50");
 
+        const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/admin/search-students`);
+        url.searchParams.set("limit", limit.toString());
+        url.searchParams.set("page", page.toString());
+
+        if (nameSearch) url.searchParams.set("search", nameSearch.trim());        
+        if(studentNumberSearch) url.searchParams.set("studentNumber", studentNumberSearch.trim());
+        if(selectedYears.length) url.searchParams.set("years", selectedYears.join(","));
+        if(selectedDepts.length) url.searchParams.set("depts", selectedDepts.join(","));
+        
         const res = await fetch(url.toString(), {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("adminToken")}`
@@ -38,8 +58,8 @@ export default function StudentsPage() {
         }
 
         const data = await res.json();
-        setStudents(prev => append ? [...prev, ...data.items] : data.items);
-        setLastKey(data.lastKey);
+        setStudents(data.items);
+        setTotalPages(data.totalPages || 0);
         setLoading(false);
     };
 
@@ -67,25 +87,102 @@ export default function StudentsPage() {
             return;
         }
 
-        // Remove deleted student from UI
-        setStudents(prev => prev.filter(s => s.id !== id));
+        fetchStudents();
     };
 
     useEffect(() => {
-        fetchStudents(search);
-    }, [search]);
+        fetchStudents();
+    }, [page]);
+
+    useEffect(() => {
+        fetchStudents();
+    }, []);
+
+    useEffect(() => {
+		(async () => {
+			const resDept = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/DEPTDATA`);
+			setDepartmentData(await resDept.json());
+
+			const resYear = await fetch(`${import.meta.env.VITE_BACKEND_URL}/get-student-metadata/YEARDATA`);
+			setYearLevelData(await resYear.json());
+		})();
+	}, []);
 
     return (
         <div style={{ padding: "1rem" }}>
             <h2>All Students</h2>
 
-            <input
-                type="text"
-                placeholder="Search by name, student number, dept, year"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ marginBottom: "1rem", padding: "0.5rem", width: "100%" }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                {/* Row 1: Name + Student Number */}
+                <div
+                    style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.75rem',
+                        alignItems: 'flex-start',
+                        marginBottom: '0.75rem' // ✅ Ensures space below row 1
+                    }}
+                >
+                    <div style={{ flex: 1, minWidth: '250px' }}>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#fff' }}>Name</label>
+                        <input
+                            type="text"
+                            placeholder="Search by name"
+                            value={nameSearch}
+                            onChange={(e) => setNameSearch(e.target.value)}
+                            style={{ padding: "0.5rem", width: "100%" }}
+                        />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '250px' }}>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#fff' }}>Student Number</label>
+                        <input
+                            type="text"
+                            placeholder="Search by student number"
+                            value={studentNumberSearch}
+                            onChange={(e) => setStudentNumberSearch(e.target.value)}
+                            style={{ padding: "0.5rem", width: "100%" }}
+                        />
+                    </div>
+                </div>
+
+                {/* Row 2: Year Level + Department + Search */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#fff' }}>Year Level</label>
+                        <Select
+                            isMulti
+                            options={Object.entries(yearLevelData).map(([value, label]) => ({
+                                value, label
+                            }))}
+                            value={selectedYears.map(y => ({ value: y, label: yearLevelData[y] }))}
+                            onChange={(selected) => setSelectedYears(selected.map(opt => opt.value))}
+                            styles={multiSelectDarkTheme}
+                        />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#fff' }}>Department</label>
+                        <Select
+                            isMulti
+                            options={Object.entries(departmentData).map(([value, label]) => ({
+                                value, label
+                            }))}
+                            value={selectedDepts.map(y => ({ value: y, label: departmentData[y] }))}
+                            onChange={(selected) => setSelectedDepts(selected.map(opt => opt.value))}
+                            styles={multiSelectDarkTheme}
+                        />
+                    </div>
+                </div>
+
+                <button
+                    onClick={() => {
+                        setPage(0);
+                        fetchStudents();
+                    }}
+                    style={{ padding: "0.5rem 1rem", background: "#444", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                >
+                    Search
+                </button>
+            </div>
 
             {loading && <p>Loading...</p>}
 
@@ -120,14 +217,26 @@ export default function StudentsPage() {
                         </tbody>
                     </table>
 
-                    {lastKey && (
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            marginTop: "1rem",
+                            gap: "0.5rem",
+                        }}
+                    >
                         <button
-                            style={{ marginTop: "1rem" }}
-                            onClick={() => fetchStudents(search, true, lastKey)}
-                        >
-                            Load More
-                        </button>
-                    )}
+                            disabled={page <= 0}
+                            onClick={() => setPage(page - 1)}
+                        >Prev</button>
+
+                        <span>Page {page+1} of {totalPages}</span>
+
+                        <button
+                            disabled={page >= totalPages - 1}
+                            onClick={() => setPage(page + 1)}
+                        >Next</button>
+                    </div>
                 </>
             )}
         </div>
