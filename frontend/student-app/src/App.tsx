@@ -27,6 +27,7 @@ function HomePage() {
         <CustomButton
           to="/register"
           label="Step 1: Register"
+          backgroundColor="#242424"
           icon={PersonAddOutline}
         />
         <CustomButton

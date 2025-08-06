@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
-import { DynamoDBClient, ScanCommand, GetItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, ScanCommand, GetItemCommand, ScanCommandOutput } from "@aws-sdk/client-dynamodb";
 import { responseWithCors } from "../../utils/cors-response";
 import { verifyAdminAuth } from "../auth/handler-adminpage-auth-verify";
 
@@ -13,6 +13,30 @@ async function getMetadata(type: string) {
         Key: { PK: { S: type }, SK: { S: "all" } }
     }));
     return res.Item?.data?.S ? JSON.parse(res.Item.data.S) : {};
+}
+
+async function scanAllWithFilter(search: string, maxResults: number) {
+    let results: any[] = [];
+    let lastKey;
+
+    do {
+        const res: ScanCommandOutput = await db.send(new ScanCommand({
+            TableName: STUDENT_TABLE,
+            ExclusiveStartKey: lastKey,
+            FilterExpression: "contains(searchIndex, :search)",
+            ExpressionAttributeValues: { ":search": { S: search } },
+            Limit: 1000 // fetch big chunks
+        }));
+
+        if (res.Items) {
+            results.push(...res.Items);
+        }
+
+        lastKey = res.LastEvaluatedKey;
+
+    } while (lastKey && results.length < maxResults);
+
+    return results.slice(0, maxResults);
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -33,20 +57,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             getMetadata("YEARDATA")
         ]);
 
-        let scanParams: any = {
-            TableName: STUDENT_TABLE,
-            Limit: limit,
-            ExclusiveStartKey: lastKey
-        };
+        let resItems;
+        let newLastKey = null;
 
         if (search) {
-            scanParams.FilterExpression = "contains(searchIndex, :search)";
-            scanParams.ExpressionAttributeValues = { ":search": { S: search } };
+            // Full scan only when searching
+            resItems = await scanAllWithFilter(search, limit);
+        } else {
+            // Paginated scan for normal browsing
+            const res = await db.send(new ScanCommand({
+                TableName: STUDENT_TABLE,
+                Limit: limit,
+                ExclusiveStartKey: lastKey
+            }));
+            resItems = res.Items || [];
+            newLastKey = res.LastEvaluatedKey ? encodeURIComponent(JSON.stringify(res.LastEvaluatedKey)) : null;
         }
 
-        const res = await db.send(new ScanCommand(scanParams));
-
-        const items = (res.Items || []).map((s) => ({
+        const items = resItems.map((s) => ({
             id: s.id.S!,
             name: s.name.S!,
             studentNumber: s.studentNumber.S!,
@@ -59,7 +87,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         return responseWithCors(200, JSON.stringify({
             items,
-            lastKey: res.LastEvaluatedKey ? encodeURIComponent(JSON.stringify(res.LastEvaluatedKey)) : null
+            lastKey: newLastKey
         }));
     } catch (err) {
         console.error("Error fetching students:", err);

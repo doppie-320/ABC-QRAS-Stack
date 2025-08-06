@@ -43,6 +43,34 @@ export default function StudentsPage() {
         setLoading(false);
     };
 
+    const deleteStudent = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this student?")) return;
+
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/admin/del-student`, {
+            method: "POST", // or DELETE depending on your backend
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
+            body: JSON.stringify({ id })
+        });
+
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("adminToken");
+            navigate("/login");
+            return;
+        }
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert(err.error || "Failed to delete student.");
+            return;
+        }
+
+        // Remove deleted student from UI
+        setStudents(prev => prev.filter(s => s.id !== id));
+    };
+
     useEffect(() => {
         fetchStudents(search);
     }, [search]);
@@ -85,7 +113,7 @@ export default function StudentsPage() {
                                     <td>{s.yearName}</td>
                                     <td style={{ fontSize: "0.8rem" }}>{s.id}</td>
                                     <td>
-                                        <button onClick={() => console.log("Delete student", s.id)}>Delete</button>
+                                        <button onClick={() => deleteStudent(s.id)}>Delete</button>
                                     </td>
                                 </tr>
                             ))}
