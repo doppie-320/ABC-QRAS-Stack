@@ -27,6 +27,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             return responseWithCors(400, JSON.stringify({ error: 'Missing required fields!' }));
         }
 
+        const normalizedStudentNumber = studentNumber.trim().toLowerCase();
         const shortName = studentNumber.replace(/\s/g, '').toLowerCase();
 
         const b64Matches = pictureB64?.match(/^data:(.+);base64,(.+)$/);
@@ -41,7 +42,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                 IndexName: 'studentNumber-index',
                 KeyConditionExpression: 'studentNumber = :sn',
                 ExpressionAttributeValues: {
-                    ':sn': { S: studentNumber }
+                    ':sn': { S: normalizedStudentNumber }
                 },
             })
         );
@@ -91,7 +92,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             Item: {
                 id: { S: id },
                 name: { S: name },
-                studentNumber: { S: studentNumber },
+                studentNumber: { S: normalizedStudentNumber },
                 passwordHash: { S: hashedPassword },
                 pictureUrl: { S: pfpS3Url },
                 department: { S: department },

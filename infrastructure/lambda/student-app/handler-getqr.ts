@@ -14,12 +14,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return responseWithCors(400, JSON.stringify({ error: "Missing number or password." }));
     }
 
+    const normalizedStudentNumber = studentNumber.trim().toLowerCase();
+
     const result = await db.send(new QueryCommand({
         TableName: STUDENT_TABLE,
         IndexName: 'studentNumber-index',
         KeyConditionExpression: 'studentNumber = :s',
         ExpressionAttributeValues: {
-            ':s': { S: studentNumber }
+            ':s': { S: normalizedStudentNumber }
         }
     }));
 
