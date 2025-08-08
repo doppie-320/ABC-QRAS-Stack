@@ -155,7 +155,7 @@ function App() {
 				<>
 					<h3>ABC-QRAS: Scanner App</h3>
 					<p style={{fontWeight: 'lighter', fontSize: 'smaller', color: 'gray'}}>This application should be distributed to authorized personnel only.</p>
-					<p>Version 08032025</p>
+					<p>Version 08072025</p>
 
 					{!qrText && <QRScanner onScan={handleScan} />}
 

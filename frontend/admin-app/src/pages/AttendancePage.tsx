@@ -52,8 +52,10 @@ export default function AttendancePage() {
 	}, []);
 
 	useEffect(() => {
-		fetchData();
-	}, [page]);
+		if (selectedEvent) {
+			fetchData();
+		}
+	}, [page, selectedEvent]);
 
 	const fetchData = () => {
 		const params = new URLSearchParams();
@@ -149,8 +151,9 @@ export default function AttendancePage() {
 			{/* Row 3: Event + Status + Scanner */}
 			<div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.75rem" }}>
 				<div style={{ flex: 1, minWidth: "200px" }}>
-					<label style={{ display: "block", marginBottom: "0.25rem" }}>Event</label>
+					<label style={{ display: "block", marginBottom: "0.25rem" }}>Event (REQUIRED)</label>
 					<Select
+						required
 						options={eventOptions}
 						value={eventOptions.find(e => e.value === selectedEvent) || null}
 						onChange={(opt) => setSelectedEvent(opt ? opt.value : null)}
@@ -213,6 +216,10 @@ export default function AttendancePage() {
 
 			<button
 				onClick={() => {
+					if(!selectedEvent) {
+						alert("Please select an event before searching!");
+						return;
+					}
 					setPage(0);
 					fetchData();
 				}}
@@ -236,20 +243,28 @@ export default function AttendancePage() {
 					</tr>
 				</thead>
 				<tbody>
-					{items.map((s) => (
-						<tr key={s.id} style={{ background: "#222" }}>
-							<td>{s.name}</td>
-							<td>{s.studentNumber}</td>
-							<td>{s.yearName}</td>
-							<td>{s.departmentName}</td>
-							<td>{s.status}</td>
-							<td>{s.scannerId || "—"}</td>
-							<td>{formatTimestamp(s.timestamp)}</td>
-							<td>{s.eventId || "—"}</td>
-						</tr>
-					))}
+					{items.map((s) => {
+						let borderColor = "transparent";
+						if (s.status === "accepted") borderColor = "#2e7d32";
+						else if (s.status === "rejected") borderColor = "#c62828";
+						else if (s.status === "no-scan" || s.status === "absent") borderColor = "#ef6c00";
+
+						return (
+							<tr key={s.id} style={{ borderLeft: `6px solid ${borderColor}`, background: "#222", color: "#fff" }}>
+								<td>{s.name}</td>
+								<td>{s.studentNumber}</td>
+								<td>{s.yearName}</td>
+								<td>{s.departmentName}</td>
+								<td>{s.status}</td>
+								<td>{s.scannerId || "—"}</td>
+								<td>{formatTimestamp(s.timestamp)}</td>
+								<td>{s.eventId || "—"}</td>
+							</tr>
+						);
+					})}
 				</tbody>
 			</table>
+
 
 			{/* Pagination (centered like Students page) */}
 			<div
